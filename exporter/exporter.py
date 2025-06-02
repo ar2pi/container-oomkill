@@ -39,65 +39,56 @@ container_oomkills_oc_bytes = Gauge(
         "command",
     ],
 )
-container_oomkills_process_stat_rss_pages = Gauge(
-    "container_oomkills_process_stat_rss_pages",
-    f"rss of OOM killed process in number of pages (usually {PAGE_SIZE} bytes per page)",
+container_oomkills_unreliable_process_stat_rss_pages = Gauge(
+    "container_oomkills_unreliable_process_stat_rss_pages",
+    f"rss of OOM killed process in number of pages (usually {PAGE_SIZE} bytes per page), unreliable value from /proc/PID/stat",
     [
         "container_id",
         "command",
     ],
 )
-container_oomkills_process_stat_rss_bytes = Gauge(
-    "container_oomkills_process_stat_rss_bytes",
-    f"rss of OOM killed process in bytes (rss_pages * {PAGE_SIZE})",
+container_oomkills_unreliable_process_stat_rss_bytes = Gauge(
+    "container_oomkills_unreliable_process_stat_rss_bytes",
+    f"rss of OOM killed process in bytes (rss_pages * {PAGE_SIZE}), unreliable value from /proc/PID/stat",
     [
         "container_id",
         "command",
     ],
 )
-container_oomkills_process_stat_vsize_bytes = Gauge(
-    "container_oomkills_process_stat_vsize_bytes",
-    "vsize of OOM killed process in bytes",
+container_oomkills_unreliable_process_stat_vsize_bytes = Gauge(
+    "container_oomkills_unreliable_process_stat_vsize_bytes",
+    "vsize of OOM killed process in bytes, unreliable value from /proc/PID/stat",
     [
         "container_id",
         "command",
     ],
 )
-container_oomkills_process_stat_minflt = Gauge(
-    "container_oomkills_process_stat_minflt",
-    "minflt of OOM killed process",
+container_oomkills_unreliable_process_stat_minflt = Gauge(
+    "container_oomkills_unreliable_process_stat_minflt",
+    "minflt of OOM killed process, unreliable value from /proc/PID/stat",
     [
         "container_id",
         "command",
     ],
 )
-container_oomkills_process_stat_majflt = Gauge(
-    "container_oomkills_process_stat_majflt",
-    "majflt of OOM killed process",
+container_oomkills_unreliable_process_stat_majflt = Gauge(
+    "container_oomkills_unreliable_process_stat_majflt",
+    "majflt of OOM killed process, unreliable value from /proc/PID/stat",
     [
         "container_id",
         "command",
     ],
 )
-# @TODO: add oom_score
-# CONTAINER_OOMKILLS_OOM_SCORE = Gauge(
-#    "container_oomkills_process_stat_oom_score",
-#    "oom_score of OOM killed process",
-#    [
-#        "container_id",
-#        "command",
-#    ],
-# )
 
 
 def parse_line(line):
     """Parse bpftrace output line and update metrics"""
     try:
-        logging.info(f"Parsing line: {line}")
+        logging.debug(f"Parsing line: {line}")
         # Example line format:
-        # 2025-06-02 00:06:58,480 probe="kprobe:oom_kill_process" host_pid="70151" container_id="fd608ceb426b" command="python3" total_pages="65536" total_bytes="268435456" message="OOM kill in container fd608ceb426b (python3)" stat=70151 (python3) R 70128 70151 70151 0 -1 4194560 64183 0 174 0 3 20 0 0 20 0 1 0 7157402 271011840 31720 18446744073709551615 187650710372352 187650710375028 281474650563184 0 0 0 0 16781312 2 0 0 0 17 0 0 0 0 0 0 187650710502824 187650710503480 187650848055296 281474650566345 281474650566361 281474650566361 281474650566625 0
+        # 2025-06-02 11:00:53,435 probe="kprobe:oom_kill_process" host_pid="16478" container_id="f1f8308e277d" cgroup_path="unified:/docker/f1f8308e277d7df58daef7aba869a6f1eb6c42187f061169d2fc4d55c567b571,cgroup:/docker/f1f8308e277d7df58daef7aba869a6f1eb6c42187f061169d2fc4d55c567b571" command="python3" total_pages="32768" message="OOM kill in container f1f8308e277d (python3)" stat=16478 (python3) R 16412 16478 16478 0 -1 4195596 28169 0 111 0 2 17 0 0 20 0 1 0 9857125 0 0 18446744073709551615 0 0 0 0 0 0 0 16781312 2 0 0 0 17 0 0 0 0 0 0 0 0 0 0 0 0 0 9
         match = re.match(
-            r'.*probe="kprobe:oom_kill_process" host_pid="(\d+)" container_id="([^"]+)" command="([^"]+)" total_pages="(\d+)" message="([^"]+)" stat=(.*)',
+            r'.*probe="kprobe:oom_kill_process" host_pid="(\d+)" container_id="([^"]*)" cgroup_path="([^"]*)" command="([^"]+)" total_pages="(\d+)" stat=(.*)',
             line,
         )
 
@@ -107,9 +98,9 @@ def parse_line(line):
         (
             host_pid,
             container_id,
+            cgroup_path,
             command,
             total_pages,
-            message,
             stat,
         ) = match.groups()
 
@@ -131,30 +122,40 @@ def parse_line(line):
             command=command,
         ).set(int(total_pages) * PAGE_SIZE)
 
-        container_oomkills_process_stat_rss_pages.labels(
-            container_id=container_id,
-            command=command,
-        ).set(int(stats[23]))
+        # start: unreliable values from /proc/PID/stat
+        # @TODO: check process flags properly for (PF_SIGNALED | PF_EXITING)
+        # https://github.com/torvalds/linux/blob/master/include/linux/sched.h#L1709-L1745
+        if int(stats[8]) == 4195596 or int(stats[8]) == 4195404:
+            logging.warning(
+                f"Process exited before being able to check /proc/PID/stat, flags: {stats[8]}"
+            )
+        else:
+            # only emit metrics if process is not yet exiting, hence we can get proper values from /proc/PID/stat
+            container_oomkills_unreliable_process_stat_rss_pages.labels(
+                container_id=container_id,
+                command=command,
+            ).set(int(stats[23]))
 
-        container_oomkills_process_stat_rss_bytes.labels(
-            container_id=container_id,
-            command=command,
-        ).set(int(stats[23]) * PAGE_SIZE)
+            container_oomkills_unreliable_process_stat_rss_bytes.labels(
+                container_id=container_id,
+                command=command,
+            ).set(int(stats[23]) * PAGE_SIZE)
 
-        container_oomkills_process_stat_vsize_bytes.labels(
-            container_id=container_id,
-            command=command,
-        ).set(int(stats[22]))
+            container_oomkills_unreliable_process_stat_vsize_bytes.labels(
+                container_id=container_id,
+                command=command,
+            ).set(int(stats[22]))
 
-        container_oomkills_process_stat_minflt.labels(
-            container_id=container_id,
-            command=command,
-        ).set(int(stats[9]))
+            container_oomkills_unreliable_process_stat_minflt.labels(
+                container_id=container_id,
+                command=command,
+            ).set(int(stats[9]))
 
-        container_oomkills_process_stat_majflt.labels(
-            container_id=container_id,
-            command=command,
-        ).set(int(stats[11]))
+            container_oomkills_unreliable_process_stat_majflt.labels(
+                container_id=container_id,
+                command=command,
+            ).set(int(stats[11]))
+        # end: unreliable values from /proc/PID/stat
 
         logging.info(
             f"Recorded OOM kill in container {container_id}, oc_bytes: {int(total_pages) * PAGE_SIZE}, vsize_bytes: {stats[22]}, rss_bytes: {int(stats[23]) * PAGE_SIZE}"

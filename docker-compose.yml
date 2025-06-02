@@ -5,7 +5,7 @@ services:
       context: ./exporter
     volumes:
       - /sys:/sys:ro  # required to access /sys/fs/cgroup/docker/CONTAINER_ID
-    privileged: true  # required to run bpftrace, as an alternative could try using CAP_BPF, CAP_PERFMON
+    privileged: true  # required to run bpftrace, as an alternative could try setting CAP_BPF, CAP_PERFMON
     pid: host         # required to trace processes from host
     ports:
       - "9090:9090"
@@ -18,12 +18,14 @@ services:
     command: python3 main.py
     restart: on-failure
     deploy:
-      replicas: 3
+      replicas: 1
       resources:
         limits:
-          memory: 64MiB
+          memory: 128MiB
         reservations:
           memory: 64MiB
+    # mem_swappiness: 0     # mem_swappiness doesn't work to restrict swap usage, set memswap_limit = mem_limit instead
+    memswap_limit: 128MiB   # without memswap_limit = mem_limit available swap would roughly 2x available memory
     stop_grace_period: 1s
 
   # stress:

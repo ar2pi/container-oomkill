@@ -41,3 +41,4 @@ docker run -it --privileged --pid=host debian nsenter -t 1 -m -u -n -i bash
 ## @TODO:
 
 - [ ] try it out in kubernetes
+- [ ] use otel python sdk instrumentation to push metrics, compare results w/ prom pull
