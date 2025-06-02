@@ -1,9 +1,8 @@
 services:
 
-  container-oomkill-exporter:
+  exporter:
     build:
-      context: ./container-oomkill-exporter
-    container_name: container-oomkill-exporter
+      context: ./exporter
     privileged: true
     pid: host
     ports:
