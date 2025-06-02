@@ -73,55 +73,59 @@ def parse_line(line):
             r'.*probe="kprobe:oom_kill_process" host_pid="(\d+)" container_id="([^"]+)" command="([^"]+)" total_pages="(\d+)" total_bytes="(\d+)" message="([^"]+)" stat=(.*)',
             line,
         )
-        if match:
-            (
-                host_pid,
-                container_id,
-                command,
-                total_pages,
-                total_bytes,
-                message,
-                stat,
-            ) = match.groups()
 
-            # Update OOM kill metrics
-            container_oomkills_total.labels(
-                container_id=container_id,
-                command=command,
-            ).inc()
+        if not match:
+            pass
 
-            stats = stat.split()
+        (
+            host_pid,
+            container_id,
+            command,
+            total_pages,
+            total_bytes,
+            message,
+            stat,
+        ) = match.groups()
 
-            container_oomkills_process_stat_rss.labels(
-                container_id=container_id,
-                command=command,
-            ).set(stats[23])
+        # Update OOM kill metrics
+        container_oomkills_total.labels(
+            container_id=container_id,
+            command=command,
+        ).inc()
 
-            container_oomkills_process_stat_vsize.labels(
-                container_id=container_id,
-                command=command,
-            ).set(stats[22])
+        stats = stat.split()
 
-            container_oomkills_process_stat_minflt.labels(
-                container_id=container_id,
-                command=command,
-            ).set(stats[9])
+        container_oomkills_process_stat_rss.labels(
+            container_id=container_id,
+            command=command,
+        ).set(stats[23])
 
-            container_oomkills_process_stat_majflt.labels(
-                container_id=container_id,
-                command=command,
-            ).set(stats[11])
+        container_oomkills_process_stat_vsize.labels(
+            container_id=container_id,
+            command=command,
+        ).set(stats[22])
 
-            logging.info(
-                f"Recorded OOM kill in container {container_id}, bytes: {total_bytes}"
-            )
+        container_oomkills_process_stat_minflt.labels(
+            container_id=container_id,
+            command=command,
+        ).set(stats[9])
+
+        container_oomkills_process_stat_majflt.labels(
+            container_id=container_id,
+            command=command,
+        ).set(stats[11])
+
+        logging.info(
+            f"Recorded OOM kill in container {container_id}, total_bytes: {total_bytes}"
+        )
+
     except Exception as e:
         logging.error(f"Error parsing line: {e}")
 
 
 def run_bpftrace():
     """Run bpftrace and process its output"""
-    cmd = ["bpftrace", "coomkill.bt"]
+    cmd = ["bpftrace", "container_oomkill.bt"]
     process = subprocess.Popen(
         cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
     )

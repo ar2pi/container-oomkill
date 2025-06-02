@@ -1,4 +1,14 @@
 services:
+
+  container-oomkill-exporter:
+    build:
+      context: ./container-oomkill-exporter
+    container_name: container-oomkill-exporter
+    privileged: true
+    pid: host
+    ports:
+      - "9090:9090"
+
   mem-stress:
     image: python:3-slim
     volumes:
@@ -27,14 +37,6 @@ services:
   #       reservations:
   #         memory: 128M
   #   stop_grace_period: 1s
-
-  coomkill-exporter:
-    build:
-      context: ./coomkill-exporter
-    privileged: true
-    pid: host
-    ports:
-      - "9090:9090"
 
   prometheus:
     image: prom/prometheus:latest

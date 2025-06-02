@@ -10,7 +10,7 @@ RUN apt-get update && \
 
 WORKDIR /app
 
-COPY coomkill.bt exporter.py /app
+COPY *.bt exporter.py /app
 
 EXPOSE 9090
 

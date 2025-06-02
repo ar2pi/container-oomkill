@@ -3,6 +3,6 @@ global:
   evaluation_interval: 15s
 
 scrape_configs:
-  - job_name: "coomkill"
+  - job_name: "container-oomkill"
     static_configs:
-      - targets: ["coomkill-exporter:9090"]
+      - targets: ["container-oomkill-exporter:9090"]

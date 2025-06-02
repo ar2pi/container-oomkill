@@ -1,14 +1,14 @@
 #!/usr/bin/env bpftrace
 
 /*
- * coomkill	Trace OOM killer in containers.
+ * container_oomkill	Trace OOM killer in containers.
  *		For Linux, uses bpftrace and eBPF.
  *
  * This traces the kernel out-of-memory killer by using kernel dynamic tracing of oom_kill_process().
  * Adds container id, command, and a few other labels and prints /proc/PID/stat for the OOM killed process.
  * Note: There's no guarantee that the OOM killed process is within a "container", this script just assumes it is.
  *
- * USAGE: coomkill.bt
+ * USAGE: container_oomkill.bt
  *
  * Adapted from the original bpftrace's tools/oomkill.bt by @brendangregg:
  * - https://github.com/bpftrace/bpftrace/blob/master/tools/oomkill.bt
