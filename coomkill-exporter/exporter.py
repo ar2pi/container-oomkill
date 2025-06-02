@@ -68,7 +68,7 @@ def parse_line(line):
     try:
         logging.info(f"Parsing line: {line}")
         # Example line format:
-        # 19:05:23 Triggered by PID 942 ("python3", "container1"), OOM kill of PID 942 ("python3", "container2"), 32768 pages, loadavg: 0.14 0.05 0.01 2/811 2773
+        # 2025-06-02 00:06:58,480 probe="kprobe:oom_kill_process" host_pid="70151" container_id="fd608ceb426b" command="python3" total_pages="65536" total_bytes="268435456" message="OOM kill in container fd608ceb426b (python3)" stat=70151 (python3) R 70128 70151 70151 0 -1 4194560 64183 0 174 0 3 20 0 0 20 0 1 0 7157402 271011840 31720 18446744073709551615 187650710372352 187650710375028 281474650563184 0 0 0 0 16781312 2 0 0 0 17 0 0 0 0 0 0 187650710502824 187650710503480 187650848055296 281474650566345 281474650566361 281474650566361 281474650566625 0
         match = re.match(
             r'.*probe="kprobe:oom_kill_process" host_pid="(\d+)" container_id="([^"]+)" command="([^"]+)" total_pages="(\d+)" total_bytes="(\d+)" message="([^"]+)" stat=(.*)',
             line,
