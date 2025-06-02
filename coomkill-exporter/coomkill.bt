@@ -1,0 +1,60 @@
+#!/usr/bin/env bpftrace
+
+/*
+ * coomkill	Trace OOM killer in containers.
+ *		For Linux, uses bpftrace and eBPF.
+ *
+ * This traces the kernel out-of-memory killer by using kernel dynamic tracing of oom_kill_process().
+ * Adds container id, command, and a few other labels and prints /proc/PID/stat for the OOM killed process.
+ * Note: There's no guarantee that the OOM killed process is within a "container", this script just assumes it is.
+ *
+ * USAGE: coomkill.bt
+ *
+ * Adapted from the original bpftrace's tools/oomkill.bt by @brendangregg:
+ * - https://github.com/bpftrace/bpftrace/blob/master/tools/oomkill.bt
+ */
+
+#ifndef BPFTRACE_HAVE_BTF
+#include <linux/oom.h>
+#endif
+
+BEGIN
+{
+	printf("Tracing oom_kill_process()... Hit Ctrl-C to end.\n");
+}
+
+// Trace current memory usage when OOM occurs
+kprobe:oom_kill_process
+{
+	$oc = (struct oom_control *)arg0;
+
+	// get container id from curtask
+	$task = (struct task_struct*)curtask;
+	$container_id = $task->nsproxy->uts_ns->name.nodename;
+
+	// print datetime with milliseconds precision
+	printf("%s", strftime("%Y-%m-%d %H:%M:%S", nsecs));
+	printf(",%03d", (nsecs % 1000000000) / 1000000);
+
+	// print labels
+	printf(" probe=\"kprobe:oom_kill_process\" host_pid=\"%d\" container_id=\"%s\" command=\"%s\" total_pages=\"%d\" total_bytes=\"%d\"",
+        $oc->chosen->pid,
+		$container_id,
+		$oc->chosen->comm,
+        $oc->totalpages,
+		$oc->totalpages * 4096);
+
+	// print message
+	printf(" message=\"OOM kill in container %s (%s)\"",
+		$container_id,
+		$oc->chosen->comm);
+
+	// print stat
+	// https://www.man7.org/linux/man-pages/man5/proc_pid_stat.5.html
+	// e.g. output: stat=16794 (python3) R 35102 35122 35122 0 -1 4194560 202658 0 265 0 9 65 0 0 20 0 1 0 6471589 1077104640 130567 18446744073709551615 187650085879808 187650085882484 281474149174048 0 0 256 0 16781312 2 0 0 0 17 0 0 0 0 0 0 187650086010280 187650086010936 187650960252928 281474149174985 281474149175001 281474149175001 281474149175265 9
+	printf(" stat=");
+	cat("/proc/%d/stat", $oc->chosen->pid);
+
+	//printf(" smaps_rollup=");
+	//cat("/proc/%d/smaps_rollup", $oc->chosen->pid);
+}

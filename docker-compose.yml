@@ -1,0 +1,62 @@
+services:
+  mem-stress:
+    image: python:3-slim
+    volumes:
+      - ./mem-stress:/app
+    working_dir: /app
+    command: python3 main.py
+    restart: on-failure
+    deploy:
+      replicas: 3
+      resources:
+        limits:
+          memory: 64MiB
+        reservations:
+          memory: 64MiB
+    stop_grace_period: 1s
+
+  # stress:
+  #   image: polinux/stress-ng
+  #   # command: stress-ng --vm 2 --vm-bytes 256M --vm-keep --vm-hang 1 --timeout 60s
+  #   # command: stress-ng --vm 4 --vm-bytes 64M --vm-keep --vm-hang 0 --timeout 60s
+  #   command: stress-ng --vm 4 --vm-bytes 64M --timeout 60s
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         memory: 128M
+  #       reservations:
+  #         memory: 128M
+  #   stop_grace_period: 1s
+
+  coomkill-exporter:
+    build:
+      context: ./coomkill-exporter
+    privileged: true
+    pid: host
+    ports:
+      - "9090:9090"
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus:/etc/prometheus
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    ports:
+      - "9091:9090"
+
+  grafana:
+    image: grafana/grafana:latest
+    volumes:
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SECURITY_ADMIN_USER=admin
+    ports:
+      - "3000:3000"
+
+volumes:
+  prometheus_data:
+  grafana_data:
