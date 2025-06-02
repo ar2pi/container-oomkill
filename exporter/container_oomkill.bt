@@ -29,20 +29,25 @@ kprobe:oom_kill_process
 	$oc = (struct oom_control *)arg0;
 
 	// get container id from curtask
+	// e.g.: f1f8308e277d
 	$task = (struct task_struct*)curtask;
 	$container_id = $task->nsproxy->uts_ns->name.nodename;
+
+	// get cgroup path, requires /sys to be mounted
+	// e.g.: unified:/docker/f1f8308e277d7df58daef7aba869a6f1eb6c42187f061169d2fc4d55c567b571,cgroup:/docker/f1f8308e277d7df58daef7aba869a6f1eb6c42187f061169d2fc4d55c567b571
+	$cgroup_path = cgroup_path(cgroup);
 
 	// print datetime with milliseconds precision
 	printf("%s", strftime("%Y-%m-%d %H:%M:%S", nsecs));
 	printf(",%03d", (nsecs % 1000000000) / 1000000);
 
 	// print labels
-	printf(" probe=\"kprobe:oom_kill_process\" host_pid=\"%d\" container_id=\"%s\" command=\"%s\" total_pages=\"%d\" total_bytes=\"%d\"",
+	printf(" probe=\"kprobe:oom_kill_process\" host_pid=\"%d\" container_id=\"%s\" cgroup_path=\"%s\" command=\"%s\" total_pages=\"%d\"",
         $oc->chosen->pid,
 		$container_id,
+		$cgroup_path,
 		$oc->chosen->comm,
-        $oc->totalpages,
-		$oc->totalpages * 4096);
+        $oc->totalpages);
 
 	// print message
 	printf(" message=\"OOM kill in container %s (%s)\"",

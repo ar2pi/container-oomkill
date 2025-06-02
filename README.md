@@ -13,9 +13,23 @@ make up
 
 ## Debug
 
-```
+```sh
 docker container logs -f container-oomkill-exporter-1
+
+docker exec -it container-oomkill-exporter-1 ./container_oomkill.bt
+
 docker exec -it container-oomkill-exporter-1 bash
+  # memory usage
+  $ cat /sys/fs/cgroup/docker/CONTAINER_ID/memory.current
+  # memory hard limit
+  # e.g.: 671088640 => 640MiB
+  $ cat /sys/fs/cgroup/docker/CONTAINER_ID/memory.max
+  # memory soft request
+  # e.g.: 67108864 => 64MiB
+  $ cat /sys/fs/cgroup/docker/CONTAINER_ID/memory.low
+  
+# enter docker-desktop ns
+docker run -it --privileged --pid=host debian nsenter -t 1 -m -u -n -i bash
 ```
 
 ## Resources

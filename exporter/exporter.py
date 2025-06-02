@@ -8,6 +8,9 @@ import time
 
 from prometheus_client import Counter, Gauge, start_http_server
 
+# @TODO: dynamically check system page size?
+PAGE_SIZE = 4096
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
 
 
@@ -20,17 +23,41 @@ container_oomkills_total = Counter(
         "command",
     ],
 )
-container_oomkills_process_stat_rss = Gauge(
-    "container_oomkills_process_stat_rss",
-    "rss of OOM killed process",
+container_oomkills_oc_pages = Gauge(
+    "container_oomkills_oc_pages",
+    f"Number of pages in OOM control (usually {PAGE_SIZE} bytes per page)",
     [
         "container_id",
         "command",
     ],
 )
-container_oomkills_process_stat_vsize = Gauge(
-    "container_oomkills_process_stat_vsize",
-    "vsize of OOM killed process",
+container_oomkills_oc_bytes = Gauge(
+    "container_oomkills_oc_bytes",
+    f"Number of bytes in OOM control (oc_pages * {PAGE_SIZE})",
+    [
+        "container_id",
+        "command",
+    ],
+)
+container_oomkills_process_stat_rss_pages = Gauge(
+    "container_oomkills_process_stat_rss_pages",
+    f"rss of OOM killed process in number of pages (usually {PAGE_SIZE} bytes per page)",
+    [
+        "container_id",
+        "command",
+    ],
+)
+container_oomkills_process_stat_rss_bytes = Gauge(
+    "container_oomkills_process_stat_rss_bytes",
+    f"rss of OOM killed process in bytes (rss_pages * {PAGE_SIZE})",
+    [
+        "container_id",
+        "command",
+    ],
+)
+container_oomkills_process_stat_vsize_bytes = Gauge(
+    "container_oomkills_process_stat_vsize_bytes",
+    "vsize of OOM killed process in bytes",
     [
         "container_id",
         "command",
@@ -70,19 +97,18 @@ def parse_line(line):
         # Example line format:
         # 2025-06-02 00:06:58,480 probe="kprobe:oom_kill_process" host_pid="70151" container_id="fd608ceb426b" command="python3" total_pages="65536" total_bytes="268435456" message="OOM kill in container fd608ceb426b (python3)" stat=70151 (python3) R 70128 70151 70151 0 -1 4194560 64183 0 174 0 3 20 0 0 20 0 1 0 7157402 271011840 31720 18446744073709551615 187650710372352 187650710375028 281474650563184 0 0 0 0 16781312 2 0 0 0 17 0 0 0 0 0 0 187650710502824 187650710503480 187650848055296 281474650566345 281474650566361 281474650566361 281474650566625 0
         match = re.match(
-            r'.*probe="kprobe:oom_kill_process" host_pid="(\d+)" container_id="([^"]+)" command="([^"]+)" total_pages="(\d+)" total_bytes="(\d+)" message="([^"]+)" stat=(.*)',
+            r'.*probe="kprobe:oom_kill_process" host_pid="(\d+)" container_id="([^"]+)" command="([^"]+)" total_pages="(\d+)" message="([^"]+)" stat=(.*)',
             line,
         )
 
         if not match:
-            pass
+            return
 
         (
             host_pid,
             container_id,
             command,
             total_pages,
-            total_bytes,
             message,
             stat,
         ) = match.groups()
@@ -95,28 +121,43 @@ def parse_line(line):
 
         stats = stat.split()
 
-        container_oomkills_process_stat_rss.labels(
+        container_oomkills_oc_pages.labels(
             container_id=container_id,
             command=command,
-        ).set(stats[23])
+        ).set(int(total_pages))
 
-        container_oomkills_process_stat_vsize.labels(
+        container_oomkills_oc_bytes.labels(
             container_id=container_id,
             command=command,
-        ).set(stats[22])
+        ).set(int(total_pages) * PAGE_SIZE)
+
+        container_oomkills_process_stat_rss_pages.labels(
+            container_id=container_id,
+            command=command,
+        ).set(int(stats[23]))
+
+        container_oomkills_process_stat_rss_bytes.labels(
+            container_id=container_id,
+            command=command,
+        ).set(int(stats[23]) * PAGE_SIZE)
+
+        container_oomkills_process_stat_vsize_bytes.labels(
+            container_id=container_id,
+            command=command,
+        ).set(int(stats[22]))
 
         container_oomkills_process_stat_minflt.labels(
             container_id=container_id,
             command=command,
-        ).set(stats[9])
+        ).set(int(stats[9]))
 
         container_oomkills_process_stat_majflt.labels(
             container_id=container_id,
             command=command,
-        ).set(stats[11])
+        ).set(int(stats[11]))
 
         logging.info(
-            f"Recorded OOM kill in container {container_id}, total_bytes: {total_bytes}"
+            f"Recorded OOM kill in container {container_id}, oc_bytes: {int(total_pages) * PAGE_SIZE}, vsize_bytes: {stats[22]}, rss_bytes: {int(stats[23]) * PAGE_SIZE}"
         )
 
     except Exception as e:

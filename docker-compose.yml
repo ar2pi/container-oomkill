@@ -3,8 +3,10 @@ services:
   exporter:
     build:
       context: ./exporter
-    privileged: true
-    pid: host
+    volumes:
+      - /sys:/sys:ro  # required to access /sys/fs/cgroup/docker/CONTAINER_ID
+    privileged: true  # required to run bpftrace, as an alternative could try using CAP_BPF, CAP_PERFMON
+    pid: host         # required to trace processes from host
     ports:
       - "9090:9090"
 
