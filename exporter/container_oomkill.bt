@@ -1,8 +1,8 @@
 #!/usr/bin/env bpftrace
 
 /*
- * container_oomkill	Trace OOM killer in containers.
- *		For Linux, uses bpftrace and eBPF.
+ * container_oomkill    Trace OOM killer in containers.
+ *        For Linux, uses bpftrace and eBPF.
  *
  * This traces the kernel out-of-memory killer by using kernel dynamic tracing of oom_kill_process().
  * Prints the process host pid, container id, cgroup path, command and a few other stats.
@@ -20,77 +20,77 @@
 
 BEGIN
 {
-	printf("Tracing oom_kill_process()... Hit Ctrl-C to end.\n");
+    printf("Tracing oom_kill_process()... Hit Ctrl-C to end.\n");
 }
 
 // Trace current memory usage when OOM occurs
 kprobe:oom_kill_process
 {
-	$oc = (struct oom_control *)arg0;
+    $oc = (struct oom_control *)arg0;
 
-	// print datetime with milliseconds precision
-	printf("%s", strftime("%Y-%m-%d %H:%M:%S", nsecs));
-	printf(",%03d", (nsecs % 1000000000) / 1000000);
+    // print datetime with milliseconds precision
+    printf("%s", strftime("%Y-%m-%d %H:%M:%S", nsecs));
+    printf(",%03d", (nsecs % 1000000000) / 1000000);
 
-	// print labels
-	printf(" probe=\"kprobe:oom_kill_process\" host_pid=\"%d\" container_id=\"%s\" cgroup_path=\"%s\" command=\"%s\"",
+    // print labels
+    printf(" probe=\"kprobe:oom_kill_process\" host_pid=\"%d\" container_id=\"%s\" cgroup_path=\"%s\" command=\"%s\"",
         $oc->chosen->pid,
-		$oc->chosen->nsproxy->uts_ns->name.nodename,
-		cgroup_path(cgroup),
-		$oc->chosen->comm);
+        $oc->chosen->nsproxy->uts_ns->name.nodename,
+        cgroup_path(cgroup),
+        $oc->chosen->comm);
 
-	// oom_control stats
-	printf(" oc_totalpages=\"%d\" oc_chosen_points=\"%d\"",
-		$oc->totalpages,		// = mem + swap
-		$oc->chosen_points);	// = (filepages + anonpages + swapents + shmempages) + pgtables_bytes / PAGE_SIZE + oom_score_adj * totalpages / 1000
+    // oom_control stats
+    printf(" oc_totalpages=\"%d\" oc_chosen_points=\"%d\"",
+        $oc->totalpages,        // = mem + swap
+        $oc->chosen_points);    // = (filepages + anonpages + swapents + shmempages) + pgtables_bytes / PAGE_SIZE + oom_score_adj * totalpages / 1000
 
-	// cgroup stats
-	printf(" memcg_memory_usage_pages=\"%d\" memcg_memory_max_pages=\"%d\" memcg_memory_low_pages=\"%d\"",
-		$oc->memcg->memory.usage.counter,	// memory usage in pages
-		$oc->memcg->memory.max,				// resource hard limit
-		$oc->memcg->memory.low);			// resource request
-	printf(" memcg_swap_current_pages=\"%d\" memcg_swap_max_pages=\"%d\" memcg_swappiness=\"%d\"",
-		$oc->memcg->swap.usage.counter,		// swap usage in pages
-		$oc->memcg->swap.max,				// swap hard limit
-		$oc->memcg->swappiness);
+    // cgroup stats
+    printf(" memcg_memory_usage_pages=\"%d\" memcg_memory_max_pages=\"%d\" memcg_memory_low_pages=\"%d\"",
+        $oc->memcg->memory.usage.counter,   // memory usage in pages
+        $oc->memcg->memory.max,             // resource hard limit
+        $oc->memcg->memory.low);            // resource request
+    printf(" memcg_swap_current_pages=\"%d\" memcg_swap_max_pages=\"%d\" memcg_swappiness=\"%d\"",
+        $oc->memcg->swap.usage.counter,     // swap usage in pages
+        $oc->memcg->swap.max,               // swap hard limit
+        $oc->memcg->swappiness);
 
-	// process mm stats
-	printf(" mm_rss_filepages=\"%d\" mm_rss_anonpages=\"%d\" mm_rss_swapents=\"%d\" mm_rss_shmempages=\"%d\"",
-		$oc->chosen->mm->rss_stat[0].count,
-		$oc->chosen->mm->rss_stat[1].count,
-		$oc->chosen->mm->rss_stat[2].count,
-		$oc->chosen->mm->rss_stat[3].count);
-	printf(" mm_pgtables_bytes=\"%d\"",
-		$oc->chosen->mm->pgtables_bytes.counter);
-	// other mm stats
-	printf(" mm_task_size=\"%d\" mm_hiwater_rss=\"%d\" mm_hiwater_vm=\"%d\" mm_total_vm=\"%d\" mm_locked_vm=\"%d\" mm_pinned_vm=\"%d\" mm_data_vm=\"%d\" mm_exec_vm=\"%d\" mm_stack_vm=\"%d\"",
-		$oc->chosen->mm->task_size,
-		$oc->chosen->mm->hiwater_rss,
-		$oc->chosen->mm->hiwater_vm,
-		$oc->chosen->mm->total_vm,
-		$oc->chosen->mm->locked_vm,
-		$oc->chosen->mm->pinned_vm.counter,
-		$oc->chosen->mm->data_vm,
-		$oc->chosen->mm->exec_vm,
-		$oc->chosen->mm->stack_vm);
+    // process mm stats
+    printf(" mm_rss_filepages=\"%d\" mm_rss_anonpages=\"%d\" mm_rss_swapents=\"%d\" mm_rss_shmempages=\"%d\"",
+        $oc->chosen->mm->rss_stat[0].count,
+        $oc->chosen->mm->rss_stat[1].count,
+        $oc->chosen->mm->rss_stat[2].count,
+        $oc->chosen->mm->rss_stat[3].count);
+    printf(" mm_pgtables_bytes=\"%d\"",
+        $oc->chosen->mm->pgtables_bytes.counter);
+    // other mm stats
+    printf(" mm_task_size=\"%d\" mm_hiwater_rss=\"%d\" mm_hiwater_vm=\"%d\" mm_total_vm=\"%d\" mm_locked_vm=\"%d\" mm_pinned_vm=\"%d\" mm_data_vm=\"%d\" mm_exec_vm=\"%d\" mm_stack_vm=\"%d\"",
+        $oc->chosen->mm->task_size,
+        $oc->chosen->mm->hiwater_rss,
+        $oc->chosen->mm->hiwater_vm,
+        $oc->chosen->mm->total_vm,
+        $oc->chosen->mm->locked_vm,
+        $oc->chosen->mm->pinned_vm.counter,
+        $oc->chosen->mm->data_vm,
+        $oc->chosen->mm->exec_vm,
+        $oc->chosen->mm->stack_vm);
 
-	// other process stats
-	printf(" proc_num_threads=\"%d\" proc_min_flt=\"%d\" proc_maj_flt=\"%d\" proc_flags=\"%d\" proc_prio=\"%d\" proc_static_prio=\"%d\" proc_utime=\"%lld\" proc_stime=\"%lld\" proc_gtime=\"%lld\" proc_start_time_ns=\"%lld\" proc_start_boottime_ns=\"%lld\"",
-		$oc->chosen->signal->nr_threads,	// Number of threads in the process
-		$oc->chosen->min_flt,				// Process minor page faults
-		$oc->chosen->maj_flt,				// Process major page faults
-		$oc->chosen->flags,					// Process flags
-		$oc->chosen->prio,					// Process priority
-		$oc->chosen->static_prio,			// Process static priority
-		$oc->chosen->utime,					// Process CPU user time in clock ticks
-		$oc->chosen->stime,					// Process CPU system time in clock ticks
-		$oc->chosen->gtime,					// Process CPU guest time in clock ticks
-		$oc->chosen->start_time,			// Process start time in ns
-		$oc->chosen->start_boottime);		// Process start time since boot time in ns
+    // other process stats
+    printf(" proc_num_threads=\"%d\" proc_min_flt=\"%d\" proc_maj_flt=\"%d\" proc_flags=\"%d\" proc_prio=\"%d\" proc_static_prio=\"%d\" proc_utime=\"%lld\" proc_stime=\"%lld\" proc_gtime=\"%lld\" proc_start_time_ns=\"%lld\" proc_start_boottime_ns=\"%lld\"",
+        $oc->chosen->signal->nr_threads,    // number of threads in the process
+        $oc->chosen->min_flt,               // minor page faults
+        $oc->chosen->maj_flt,               // major page faults
+        $oc->chosen->flags,                 // process flags
+        $oc->chosen->prio,                  // Process priority
+        $oc->chosen->static_prio,           // Process static priority
+        $oc->chosen->utime,                 // Process CPU user time in clock ticks
+        $oc->chosen->stime,                 // Process CPU system time in clock ticks
+        $oc->chosen->gtime,                 // Process CPU guest time in clock ticks
+        $oc->chosen->start_time,            // Process start time in ns
+        $oc->chosen->start_boottime);       // Process start time since boot time in ns
 
-	// calculated stats
-	printf(" uptime_ms=\"%lld\"",
-		(nsecs - $oc->chosen->start_time) / 1000000);
+    // calculated stats
+    printf(" uptime_ms=\"%lld\"",
+        (nsecs - $oc->chosen->start_time) / 1000000);
 
-	printf("\n");
+    printf("\n");
 }
