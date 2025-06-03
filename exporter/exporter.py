@@ -26,7 +26,7 @@ container_oomkills_total = Counter(
 )
 container_oomkills_oc_total_bytes = Gauge(
     "container_oomkills_oc_total_bytes",
-    f"Number of bytes scanned by OOM control, i.e. mem + swap (totalpages * {PAGE_SIZE})",
+    f"Number of bytes held by processes evaluated by OOM control, i.e. mem + swap (totalpages * {PAGE_SIZE})",
     [
         "container_id",
         "command",

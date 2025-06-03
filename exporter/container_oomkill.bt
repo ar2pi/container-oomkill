@@ -10,7 +10,7 @@
  * USAGE: container_oomkill.bt
  *
  * Adapted from the original bpftrace's tools/oomkill.bt by Brendan Gregg:
- * - https://github.com/bpftrace/bpftrace/blob/master/tools/oomkill.bt
+ * -> https://github.com/bpftrace/bpftrace/blob/master/tools/oomkill.bt
  */
 
 #ifndef BPFTRACE_HAVE_BTF
@@ -73,7 +73,8 @@ kprobe:oom_kill_process
 		$oc->chosen->mm->stack_vm);
 
 	// other process stats
-	printf(" proc_num_threads=\"%d\" proc_min_flt=\"%d\" proc_maj_flt=\"%d\" proc_flags=\"%d\" proc_prio=\"%d\" proc_static_prio=\"%d\" proc_utime=\"%lld\" proc_stime=\"%lld\" proc_gtime=\"%lld\" proc_start_time_ns=\"%lld\" proc_start_boottime_ns=\"%lld\"",
+	printf(" proc_oom_score_adj=\"%d\" proc_num_threads=\"%d\" proc_min_flt=\"%d\" proc_maj_flt=\"%d\" proc_flags=\"%d\" proc_prio=\"%d\" proc_static_prio=\"%d\" proc_utime=\"%lld\" proc_stime=\"%lld\" proc_gtime=\"%lld\" proc_start_time_ns=\"%lld\" proc_start_boottime_ns=\"%lld\"",
+		$oc->chosen->signal->oom_score_adj, // score adj used in oom_badness calculation
 		$oc->chosen->signal->nr_threads,    // number of threads in the process
 		$oc->chosen->min_flt,               // minor page faults
 		$oc->chosen->maj_flt,               // major page faults
