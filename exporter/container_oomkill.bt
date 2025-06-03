@@ -9,7 +9,7 @@
  *
  * USAGE: container_oomkill.bt
  *
- * Adapted from the original bpftrace's tools/oomkill.bt by @brendangregg:
+ * Adapted from the original bpftrace's tools/oomkill.bt by Brendan Gregg:
  * - https://github.com/bpftrace/bpftrace/blob/master/tools/oomkill.bt
  */
 

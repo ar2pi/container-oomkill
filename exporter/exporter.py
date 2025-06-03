@@ -8,13 +8,14 @@ import time
 
 from prometheus_client import Counter, Gauge, start_http_server
 
-# @TODO: just in case,dynamically check system page size?
+# @TODO: just in case, dynamically check system page size?
 PAGE_SIZE = 4096
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
 
 
 # Prometheus metrics
+# Note: we avoid using pid as a label to prevent cardinality explosion
 container_oomkills_total = Counter(
     "container_oomkills_total",
     "Number of OOM kills",
@@ -23,57 +24,65 @@ container_oomkills_total = Counter(
         "command",
     ],
 )
-container_oomkills_oc_pages = Gauge(
-    "container_oomkills_oc_pages",
-    f"Number of pages in OOM control (usually {PAGE_SIZE} bytes per page)",
+container_oomkills_oc_total_bytes = Gauge(
+    "container_oomkills_oc_total_bytes",
+    f"Number of bytes scanned by OOM control, i.e. mem + swap (totalpages * {PAGE_SIZE})",
     [
         "container_id",
         "command",
     ],
 )
-container_oomkills_oc_bytes = Gauge(
-    "container_oomkills_oc_bytes",
-    f"Number of bytes in OOM control (oc_pages * {PAGE_SIZE})",
+container_oomkills_oc_chosen_points = Gauge(
+    "container_oomkills_oc_chosen_points",
+    f"Number of oom_badness points for chosen process",
     [
         "container_id",
         "command",
     ],
 )
-container_oomkills_unreliable_process_stat_rss_pages = Gauge(
-    "container_oomkills_unreliable_process_stat_rss_pages",
-    f"rss of OOM killed process in number of pages (usually {PAGE_SIZE} bytes per page), unreliable value from /proc/PID/stat",
+container_oomkills_cgroup_mem_usage_bytes = Gauge(
+    "container_oomkills_cgroup_mem_usage_bytes",
+    f"Number of bytes used by the container's memory cgroup",
     [
         "container_id",
         "command",
     ],
 )
-container_oomkills_unreliable_process_stat_rss_bytes = Gauge(
-    "container_oomkills_unreliable_process_stat_rss_bytes",
-    f"rss of OOM killed process in bytes (rss_pages * {PAGE_SIZE}), unreliable value from /proc/PID/stat",
+container_oomkills_cgroup_mem_limit_bytes = Gauge(
+    "container_oomkills_cgroup_mem_limit_bytes",
+    f"Number of bytes limit of the container's memory cgroup",
     [
         "container_id",
         "command",
     ],
 )
-container_oomkills_unreliable_process_stat_vsize_bytes = Gauge(
-    "container_oomkills_unreliable_process_stat_vsize_bytes",
-    "vsize of OOM killed process in bytes, unreliable value from /proc/PID/stat",
+container_oomkills_cgroup_mem_request_bytes = Gauge(
+    "container_oomkills_cgroup_mem_request_bytes",
+    f"Number of bytes request of the container's memory cgroup",
     [
         "container_id",
         "command",
     ],
 )
-container_oomkills_unreliable_process_stat_minflt = Gauge(
-    "container_oomkills_unreliable_process_stat_minflt",
-    "minflt of OOM killed process, unreliable value from /proc/PID/stat",
+container_oomkills_cgroup_swap_usage_bytes = Gauge(
+    "container_oomkills_cgroup_swap_usage_bytes",
+    f"Number of bytes used by the container's swap cgroup",
     [
         "container_id",
         "command",
     ],
 )
-container_oomkills_unreliable_process_stat_majflt = Gauge(
-    "container_oomkills_unreliable_process_stat_majflt",
-    "majflt of OOM killed process, unreliable value from /proc/PID/stat",
+container_oomkills_cgroup_swap_limit_bytes = Gauge(
+    "container_oomkills_cgroup_swap_limit_bytes",
+    f"Number of bytes limit of the container's swap cgroup",
+    [
+        "container_id",
+        "command",
+    ],
+)
+container_oomkills_cgroup_swappiness = Gauge(
+    "container_oomkills_cgroup_swappiness",
+    f"Swappiness of the container's cgroup (0-100)",
     [
         "container_id",
         "command",
@@ -85,10 +94,15 @@ def parse_line(line):
     """Parse bpftrace output line and update metrics"""
     try:
         logging.debug(f"Parsing line: {line}")
-        # Example line format:
-        # 2025-06-02 11:00:53,435 probe="kprobe:oom_kill_process" host_pid="16478" container_id="f1f8308e277d" cgroup_path="unified:/docker/f1f8308e277d7df58daef7aba869a6f1eb6c42187f061169d2fc4d55c567b571,cgroup:/docker/f1f8308e277d7df58daef7aba869a6f1eb6c42187f061169d2fc4d55c567b571" command="python3" total_pages="32768" message="OOM kill in container f1f8308e277d (python3)" stat=16478 (python3) R 16412 16478 16478 0 -1 4195596 28169 0 111 0 2 17 0 0 20 0 1 0 9857125 0 0 18446744073709551615 0 0 0 0 0 0 0 16781312 2 0 0 0 17 0 0 0 0 0 0 0 0 0 0 0 0 0 9
+        # Examples:
+        # 128MiB hard limit, no soft limit, no swap
+        # 2025-06-03 16:22:12,894 probe="kprobe:oom_kill_process" host_pid="42748" container_id="257b1d14ce1c" cgroup_path="unified:/docker/257b1d14ce1c632d8d5ef53b9901f3b4583a4b95fe4bbb197623d59074059959,cgroup:/docker/257b1d14ce1c632d8d5ef53b9901f3b4583a4b95fe4bbb197623d59074059959" command="python3" oc_totalpages="32768" oc_chosen_points="33654" memcg_memory_usage_pages="32768" memcg_memory_max_pages="32768" memcg_memory_low_pages="0" memcg_swap_current_pages="0" memcg_swap_max_pages="0" memcg_swappiness="60" mm_rss_filepages="1301" mm_rss_anonpages="32245" mm_rss_swapents="0" mm_rss_shmempages="0" mm_pgtables_bytes="442368" mm_task_size="0" mm_hiwater_rss="3381" mm_hiwater_vm="4439" mm_total_vm="35325" mm_locked_vm="0" mm_pinned_vm="0" mm_data_vm="33456" mm_exec_vm="1615" mm_stack_vm="33" proc_num_threads="1" proc_min_flt="3773" proc_maj_flt="0" proc_flags="4194560" proc_prio="120" proc_static_prio="120" proc_utime="64000000" proc_stime="29000000" proc_gtime="0" proc_start_time_ns="170109788292976" proc_start_boottime_ns="170109788292976" uptime_ms="3106"
+        # 128MiB hard limit, 64MiB soft limit, no swap
+        # 2025-06-03 16:17:20,157 probe="kprobe:oom_kill_process" host_pid="41378" container_id="65a8b60c9857" cgroup_path="unified:/docker/65a8b60c9857747a01154894c0ceac7fd1003f0dd58e1a97964e5db091a81ffd,cgroup:/docker/65a8b60c9857747a01154894c0ceac7fd1003f0dd58e1a97964e5db091a81ffd" command="python3" oc_totalpages="32768" oc_chosen_points="33658" memcg_memory_usage_pages="32768" memcg_memory_max_pages="32768" memcg_memory_low_pages="16384" memcg_swap_current_pages="0" memcg_swap_max_pages="0" memcg_swappiness="60" mm_rss_filepages="1267" mm_rss_anonpages="32285" mm_rss_swapents="0" mm_rss_shmempages="0" mm_pgtables_bytes="434176" mm_task_size="0" mm_hiwater_rss="3299" mm_hiwater_vm="4439" mm_total_vm="35325" mm_locked_vm="0" mm_pinned_vm="0" mm_data_vm="33456" mm_exec_vm="1615" mm_stack_vm="33" proc_num_threads="1" proc_min_flt="6757" proc_maj_flt="0" proc_flags="4194560" proc_prio="120" proc_static_prio="120" proc_utime="76000000" proc_stime="30000000" proc_gtime="0" proc_start_time_ns="169818048811135" proc_start_boottime_ns="169818048811177" uptime_ms="3108"
+        # 64MiB hard limit, 64MiB soft limit, 64MiB swap
+        # 2025-06-03 16:15:11,491 probe="kprobe:oom_kill_process" host_pid="40464" container_id="85c60f0c4603" cgroup_path="unified:/docker/85c60f0c4603da90486468dd727752ad61d8425923376de7ef0fac897cc4f70b,cgroup:/docker/85c60f0c4603da90486468dd727752ad61d8425923376de7ef0fac897cc4f70b" command="python3" oc_totalpages="32768" oc_chosen_points="33472" memcg_memory_usage_pages="16384" memcg_memory_max_pages="16384" memcg_memory_low_pages="16384" memcg_swap_current_pages="16384" memcg_swap_max_pages="16384" memcg_swappiness="60" mm_rss_filepages="1317" mm_rss_anonpages="15697" mm_rss_swapents="16352" mm_rss_shmempages="0" mm_pgtables_bytes="434176" mm_task_size="0" mm_hiwater_rss="17494" mm_hiwater_vm="3432" mm_total_vm="35159" mm_locked_vm="0" mm_pinned_vm="0" mm_data_vm="33290" mm_exec_vm="1615" mm_stack_vm="33" proc_num_threads="1" proc_min_flt="18631" proc_maj_flt="161" proc_flags="4194560" proc_prio="120" proc_static_prio="120" proc_utime="24000000" proc_stime="84000000" proc_gtime="0" proc_start_time_ns="169688273567534" proc_start_boottime_ns="169688273567617" uptime_ms="3217"
         match = re.match(
-            r'.*probe="kprobe:oom_kill_process" host_pid="(\d+)" container_id="([^"]*)" cgroup_path="([^"]*)" command="([^"]+)" total_pages="(\d+)" stat=(.*)',
+            r'.*probe="kprobe:oom_kill_process" host_pid="(\d+)" container_id="([^"]*)" cgroup_path="([^"]*)" command="([^"]+)"(.*)',
             line,
         )
 
@@ -100,9 +114,11 @@ def parse_line(line):
             container_id,
             cgroup_path,
             command,
-            total_pages,
-            stat,
+            stats,
         ) = match.groups()
+
+        # Parse all key-value pairs in stats
+        stats_kv = {k: v for k, v in re.findall(r'\s([^=]+)=\"([^"]*)\"', stats)}
 
         # Update OOM kill metrics
         container_oomkills_total.labels(
@@ -110,55 +126,44 @@ def parse_line(line):
             command=command,
         ).inc()
 
-        stats = stat.split()
-
-        container_oomkills_oc_pages.labels(
+        container_oomkills_oc_total_bytes.labels(
             container_id=container_id,
             command=command,
-        ).set(int(total_pages))
-
-        container_oomkills_oc_bytes.labels(
+        ).set(int(stats_kv["oc_totalpages"]) * PAGE_SIZE)
+        container_oomkills_oc_chosen_points.labels(
             container_id=container_id,
             command=command,
-        ).set(int(total_pages) * PAGE_SIZE)
+        ).set(int(stats_kv["oc_chosen_points"]))
 
-        # start: unreliable values from /proc/PID/stat
-        # @TODO: check process flags properly for (PF_SIGNALED | PF_EXITING)
-        # https://github.com/torvalds/linux/blob/master/include/linux/sched.h#L1709-L1745
-        if int(stats[8]) == 4195596 or int(stats[8]) == 4195404:
-            logging.warning(
-                f"Process exited before being able to check /proc/PID/stat, flags: {stats[8]}"
-            )
-        else:
-            # only emit metrics if process is not yet exiting, hence we can get proper values from /proc/PID/stat
-            container_oomkills_unreliable_process_stat_rss_pages.labels(
-                container_id=container_id,
-                command=command,
-            ).set(int(stats[23]))
+        container_oomkills_cgroup_mem_usage_bytes.labels(
+            container_id=container_id,
+            command=command,
+        ).set(int(stats_kv["memcg_memory_usage_pages"]) * PAGE_SIZE)
+        container_oomkills_cgroup_mem_limit_bytes.labels(
+            container_id=container_id,
+            command=command,
+        ).set(int(stats_kv["memcg_memory_max_pages"]) * PAGE_SIZE)
+        container_oomkills_cgroup_mem_request_bytes.labels(
+            container_id=container_id,
+            command=command,
+        ).set(int(stats_kv["memcg_memory_low_pages"]) * PAGE_SIZE)
+        container_oomkills_cgroup_swap_usage_bytes.labels(
+            container_id=container_id,
+            command=command,
+        ).set(int(stats_kv["memcg_swap_current_pages"]) * PAGE_SIZE)
+        container_oomkills_cgroup_swap_limit_bytes.labels(
+            container_id=container_id,
+            command=command,
+        ).set(int(stats_kv["memcg_swap_max_pages"]) * PAGE_SIZE)
+        container_oomkills_cgroup_swappiness.labels(
+            container_id=container_id,
+            command=command,
+        ).set(int(stats_kv["memcg_swappiness"]))
 
-            container_oomkills_unreliable_process_stat_rss_bytes.labels(
-                container_id=container_id,
-                command=command,
-            ).set(int(stats[23]) * PAGE_SIZE)
-
-            container_oomkills_unreliable_process_stat_vsize_bytes.labels(
-                container_id=container_id,
-                command=command,
-            ).set(int(stats[22]))
-
-            container_oomkills_unreliable_process_stat_minflt.labels(
-                container_id=container_id,
-                command=command,
-            ).set(int(stats[9]))
-
-            container_oomkills_unreliable_process_stat_majflt.labels(
-                container_id=container_id,
-                command=command,
-            ).set(int(stats[11]))
-        # end: unreliable values from /proc/PID/stat
+        # @TODO: finish parsing the rest of the stats
 
         logging.info(
-            f"Recorded OOM kill in container {container_id}, oc_bytes: {int(total_pages) * PAGE_SIZE}, vsize_bytes: {stats[22]}, rss_bytes: {int(stats[23]) * PAGE_SIZE}"
+            f"Recorded OOM kill of {command} [{host_pid}] in container {container_id}, stats: {stats}"
         )
 
     except Exception as e:
