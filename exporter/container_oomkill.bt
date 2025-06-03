@@ -5,7 +5,7 @@
  *		For Linux, uses bpftrace and eBPF.
  *
  * This traces the kernel out-of-memory killer by using kernel dynamic tracing of oom_kill_process().
- * Adds container id, command, and a few other labels and prints /proc/PID/stat for the OOM killed process.
+ * Prints the process host pid, container id, cgroup path, command and a few other stats.
  * Note: There's no guarantee that the OOM killed process is within a "container", this script just assumes it is.
  *
  * USAGE: container_oomkill.bt
@@ -27,165 +27,70 @@ BEGIN
 kprobe:oom_kill_process
 {
 	$oc = (struct oom_control *)arg0;
-	$task = (struct task_struct*)curtask;
 
 	// print datetime with milliseconds precision
 	printf("%s", strftime("%Y-%m-%d %H:%M:%S", nsecs));
 	printf(",%03d", (nsecs % 1000000000) / 1000000);
 
 	// print labels
-	printf(" probe=\"kprobe:oom_kill_process\" host_pid=\"%d\" container_id=\"%s\" cgroup_path=\"%s\" command=\"%s\" total_pages=\"%d\"",
+	printf(" probe=\"kprobe:oom_kill_process\" host_pid=\"%d\" container_id=\"%s\" cgroup_path=\"%s\" command=\"%s\"",
         $oc->chosen->pid,
-		// get container id from curtask
-		// e.g.: f1f8308e277d
-		$task->nsproxy->uts_ns->name.nodename,
-		// get cgroup path, requires /sys to be mounted
-		// e.g.: unified:/docker/f1f8308e277d7df58daef7aba869a6f1eb6c42187f061169d2fc4d55c567b571,cgroup:/docker/f1f8308e277d7df58daef7aba869a6f1eb6c42187f061169d2fc4d55c567b571
-		// @TODO: for some reason when accessing cgroup_path(cgroup) the /proc/PID/stat returns empty vsize / rss
-		//		pid stat flags: 4195596 => 0x0040050C => PF_MEMALLOC_NOFS | PF_SUPERPRIV | PF_SIGNALED | PF_POSTCOREDUMP | PF_EXITING
-		//		https://www.rapidtables.com/convert/number/decimal-to-hex.html?x=4195596
-		// 		see kernel process flags https://github.com/torvalds/linux/blob/master/include/linux/sched.h#L1709-L1745
-		// 		Hypothesis: cat(/proc/PID/stat) might defer to execute while process is exiting (PF_SIGNALED | PF_EXITING), so we can't get proper stat values
-		//cgroup_path(cgroup),
-		"",
-		$oc->chosen->comm,
-        $oc->totalpages); // mem + swap
+		$oc->chosen->nsproxy->uts_ns->name.nodename,
+		cgroup_path(cgroup),
+		$oc->chosen->comm);
 
-	printf(" memory_current_pages=\"%d\" memory_limit_pages=\"%d\" memory_request_pages=\"%d\"",
-		$oc->memcg->memory.usage.counter,
-		$oc->memcg->memory.max,
-		$oc->memcg->memory.low);
+	// oom_control stats
+	printf(" oc_totalpages=\"%d\" oc_chosen_points=\"%d\"",
+		$oc->totalpages,		// = mem + swap
+		$oc->chosen_points);	// = (filepages + anonpages + swapents + shmempages) + pgtables_bytes / PAGE_SIZE + oom_score_adj * totalpages / 1000
 
-	printf(" swap_current_pages=\"%d\" swap_limit_pages=\"%d\" swappiness=\"%d\"",
-		$oc->memcg->swap.usage.counter,
-		$oc->memcg->swap.max,
+	// cgroup stats
+	printf(" memcg_memory_usage_pages=\"%d\" memcg_memory_max_pages=\"%d\" memcg_memory_low_pages=\"%d\"",
+		$oc->memcg->memory.usage.counter,	// memory usage in pages
+		$oc->memcg->memory.max,				// resource hard limit
+		$oc->memcg->memory.low);			// resource request
+	printf(" memcg_swap_current_pages=\"%d\" memcg_swap_max_pages=\"%d\" memcg_swappiness=\"%d\"",
+		$oc->memcg->swap.usage.counter,		// swap usage in pages
+		$oc->memcg->swap.max,				// swap hard limit
 		$oc->memcg->swappiness);
 
-	printf(" chosen_points=\"%d\"",
-		$oc->chosen_points);
+	// process mm stats
+	printf(" mm_rss_filepages=\"%d\" mm_rss_anonpages=\"%d\" mm_rss_swapents=\"%d\" mm_rss_shmempages=\"%d\"",
+		$oc->chosen->mm->rss_stat[0].count,
+		$oc->chosen->mm->rss_stat[1].count,
+		$oc->chosen->mm->rss_stat[2].count,
+		$oc->chosen->mm->rss_stat[3].count);
+	printf(" mm_pgtables_bytes=\"%d\"",
+		$oc->chosen->mm->pgtables_bytes.counter);
+	// other mm stats
+	printf(" mm_task_size=\"%d\" mm_hiwater_rss=\"%d\" mm_hiwater_vm=\"%d\" mm_total_vm=\"%d\" mm_locked_vm=\"%d\" mm_pinned_vm=\"%d\" mm_data_vm=\"%d\" mm_exec_vm=\"%d\" mm_stack_vm=\"%d\"",
+		$oc->chosen->mm->task_size,
+		$oc->chosen->mm->hiwater_rss,
+		$oc->chosen->mm->hiwater_vm,
+		$oc->chosen->mm->total_vm,
+		$oc->chosen->mm->locked_vm,
+		$oc->chosen->mm->pinned_vm.counter,
+		$oc->chosen->mm->data_vm,
+		$oc->chosen->mm->exec_vm,
+		$oc->chosen->mm->stack_vm);
 
-	// Not sure if this is any useful, but it's available
-	//printf(" vmpressure_scanned=\"%d\" vmpressure_reclaimed=\"%d\" vmpressure_tree_scanned=\"%d\" vmpressure_tree_reclaimed=\"%d\"",
-	//	$oc->memcg->vmpressure.scanned,
-	//	$oc->memcg->vmpressure.reclaimed,
-	//	$oc->memcg->vmpressure.tree_scanned,
-	//	$oc->memcg->vmpressure.tree_reclaimed);
+	// other process stats
+	printf(" proc_num_threads=\"%d\" proc_min_flt=\"%d\" proc_maj_flt=\"%d\" proc_flags=\"%d\" proc_prio=\"%d\" proc_static_prio=\"%d\" proc_utime=\"%lld\" proc_stime=\"%lld\" proc_gtime=\"%lld\" proc_start_time_ns=\"%lld\" proc_start_boottime_ns=\"%lld\"",
+		$oc->chosen->signal->nr_threads,	// Number of threads in the process
+		$oc->chosen->min_flt,				// Process minor page faults
+		$oc->chosen->maj_flt,				// Process major page faults
+		$oc->chosen->flags,					// Process flags
+		$oc->chosen->prio,					// Process priority
+		$oc->chosen->static_prio,			// Process static priority
+		$oc->chosen->utime,					// Process CPU user time in clock ticks
+		$oc->chosen->stime,					// Process CPU system time in clock ticks
+		$oc->chosen->gtime,					// Process CPU guest time in clock ticks
+		$oc->chosen->start_time,			// Process start time in ns
+		$oc->chosen->start_boottime);		// Process start time since boot time in ns
 
-	// Haven't found a good way to map vmstats to memory.stat yet
-	// https://sourcegraph.com/github.com/torvalds/linux/-/blob/include/linux/memcontrol.h?L232-233
-	// https://sourcegraph.com/github.com/torvalds/linux/-/blob/mm/memcontrol.c?L1334-1387
-	// see memory.stat: https://www.kernel.org/doc/html/latest/admin-guide/cgroup-v2.html
-	// e.g. cat /sys/fs/cgroup/docker/CID/memory.stat output:
-	// anon 1283284992
-    // file 4096
-    // kernel 4104192
-    // kernel_stack 16384
-    // pagetables 3395584
-    // sec_pagetables 0
-    // percpu 25728
-    // sock 0
-    // vmalloc 0
-    // shmem 0
-    // zswap 0
-    // zswapped 0
-    // file_mapped 0
-    // file_dirty 0
-    // file_writeback 0
-    // swapcached 0
-    // anon_thp 119537664
-    // file_thp 0
-    // shmem_thp 0
-    // inactive_anon 0
-    // active_anon 1283170304
-    // inactive_file 4096
-    // active_file 0
-    // unevictable 0
-    // slab_reclaimable 163848
-    // slab_unreclaimable 486888
-    // slab 650736
-    // workingset_refault_anon 0
-    // workingset_refault_file 0
-    // workingset_activate_anon 0
-    // workingset_activate_file 0
-    // workingset_restore_anon 0
-    // workingset_restore_file 0
-    // workingset_nodereclaim 0
-    // pgscan 0
-    // pgsteal 0
-    // pgscan_kswapd 0
-    // pgscan_direct 0
-    // pgscan_khugepaged 0
-    // pgsteal_kswapd 0
-    // pgsteal_direct 0
-    // pgsteal_khugepaged 0
-    // pgfault 284925
-    // pgmajfault 0
-    // pgrefill 0
-    // pgactivate 0
-    // pgdeactivate 0
-    // pglazyfree 0
-    // pglazyfreed 0
-    // zswpin 0
-    // zswpout 0
-    // zswpwb 0
-    // thp_fault_alloc 58
-    // thp_collapse_alloc 0
-    // thp_swpout 0
-    // thp_swpout_fallback 0
-	//printf(" vmstats_0=\"%d\" vmstats_1=\"%d\" vmstats_2=\"%d\" vmstats_3=\"%d\" vmstats_4=\"%d\" vmstats_5=\"%d\" vmstats_6=\"%d\" vmstats_7=\"%d\" vmstats_8=\"%d\" vmstats_9=\"%d\" vmstats_10=\"%d\" vmstats_11=\"%d\" vmstats_12=\"%d\" vmstats_13=\"%d\" vmstats_14=\"%d\" vmstats_15=\"%d\" vmstats_16=\"%d\" vmstats_17=\"%d\" vmstats_18=\"%d\" vmstats_19=\"%d\" vmstats_20=\"%d\" vmstats_21=\"%d\" vmstats_22=\"%d\" vmstats_23=\"%d\" vmstats_24=\"%d\" vmstats_25=\"%d\" vmstats_26=\"%d\" vmstats_27=\"%d\" vmstats_28=\"%d\" vmstats_29=\"%d\" vmstats_30=\"%d\" vmstats_31=\"%d\" vmstats_32=\"%d\" vmstats_33=\"%d\"",
-	//	$oc->memcg->vmstats->state[0],
-	//	$oc->memcg->vmstats->state[1],
-	//	$oc->memcg->vmstats->state[2],
-	//	$oc->memcg->vmstats->state[3],
-	//	$oc->memcg->vmstats->state[4],
-	//	$oc->memcg->vmstats->state[5],
-	//	$oc->memcg->vmstats->state[6],
-	//	$oc->memcg->vmstats->state[7],
-	//	$oc->memcg->vmstats->state[8],
-	//	$oc->memcg->vmstats->state[9],
-	//	$oc->memcg->vmstats->state[10],
-	//	$oc->memcg->vmstats->state[11],
-	//	$oc->memcg->vmstats->state[12],
-	//	$oc->memcg->vmstats->state[13],
-	//	$oc->memcg->vmstats->state[14],
-	//	$oc->memcg->vmstats->state[15],
-	//	$oc->memcg->vmstats->state[16],
-	//	$oc->memcg->vmstats->state[17],
-	//	$oc->memcg->vmstats->state[18],
-	//	$oc->memcg->vmstats->state[19],
-	//	$oc->memcg->vmstats->state[20],
-	//	$oc->memcg->vmstats->state[21],
-	//	$oc->memcg->vmstats->state[22],
-	//	$oc->memcg->vmstats->state[23],
-	//	$oc->memcg->vmstats->state[24],
-	//	$oc->memcg->vmstats->state[25],
-	//	$oc->memcg->vmstats->state[26],
-	//	$oc->memcg->vmstats->state[27],
-	//	$oc->memcg->vmstats->state[28],
-	//	$oc->memcg->vmstats->state[29],
-	//	$oc->memcg->vmstats->state[30],
-	//	$oc->memcg->vmstats->state[31],
-	//	$oc->memcg->vmstats->state[32],
-	//	$oc->memcg->vmstats->state[33]);
+	// calculated stats
+	printf(" uptime_ms=\"%lld\"",
+		(nsecs - $oc->chosen->start_time) / 1000000);
 
-	// print message
-	//printf(" message=\"OOM kill in container %s (%s)\"",
-	//	$task->nsproxy->uts_ns->name.nodename,
-	//	$oc->chosen->comm);
-
-	// print stat
-	// https://www.man7.org/linux/man-pages/man5/proc_pid_stat.5.html
-	// @TODO: troubleshoot instance of empty vsize / rss when using cgroup_path()
-	// e.g. output: stat=16794 (python3) R 35102 35122 35122 0 -1 4194560 202658 0 265 0 9 65 0 0 20 0 1 0 6471589 1077104640 130567 18446744073709551615 187650085879808 187650085882484 281474149174048 0 0 256 0 16781312 2 0 0 0 17 0 0 0 0 0 0 187650086010280 187650086010936 187650960252928 281474149174985 281474149175001 281474149175001 281474149175265 9
-	printf(" stat=");
-	cat("/proc/%d/stat", $oc->chosen->pid);
-
-	//printf(" oom_score=");
-	///cat("/proc/%d/oom_score", $oc->chosen->pid);
-
-	//printf(" cmdline=");
-	//cat("/proc/%d/cmdline", $oc->chosen->pid);
-
-	//printf(" smaps_rollup=");
-	//cat("/proc/%d/smaps_rollup", $oc->chosen->pid);
+	printf("\n");
 }

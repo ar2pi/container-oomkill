@@ -8,7 +8,7 @@ import time
 
 from prometheus_client import Counter, Gauge, start_http_server
 
-# @TODO: dynamically check system page size?
+# @TODO: just in case,dynamically check system page size?
 PAGE_SIZE = 4096
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
