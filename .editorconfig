@@ -9,6 +9,6 @@ indent_size = 2
 [*.py]
 indent_size = 4
 
-[tools/*.bt]
+[*.bt]
 indent_style = tab
 indent_size = unset
