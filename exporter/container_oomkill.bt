@@ -23,7 +23,6 @@ BEGIN
     printf("Tracing oom_kill_process()... Hit Ctrl-C to end.\n");
 }
 
-// Trace current memory usage when OOM occurs
 kprobe:oom_kill_process
 {
     $oc = (struct oom_control *)arg0;
@@ -80,13 +79,13 @@ kprobe:oom_kill_process
         $oc->chosen->min_flt,               // minor page faults
         $oc->chosen->maj_flt,               // major page faults
         $oc->chosen->flags,                 // process flags
-        $oc->chosen->prio,                  // Process priority
-        $oc->chosen->static_prio,           // Process static priority
-        $oc->chosen->utime,                 // Process CPU user time in clock ticks
-        $oc->chosen->stime,                 // Process CPU system time in clock ticks
-        $oc->chosen->gtime,                 // Process CPU guest time in clock ticks
-        $oc->chosen->start_time,            // Process start time in ns
-        $oc->chosen->start_boottime);       // Process start time since boot time in ns
+        $oc->chosen->prio,                  // process priority
+        $oc->chosen->static_prio,           // process static priority
+        $oc->chosen->utime,                 // process CPU user time in clock ticks
+        $oc->chosen->stime,                 // process CPU system time in clock ticks
+        $oc->chosen->gtime,                 // process CPU guest time in clock ticks
+        $oc->chosen->start_time,            // process start time in ns
+        $oc->chosen->start_boottime);       // process start time since boot time in ns
 
     // calculated stats
     printf(" uptime_ms=\"%lld\"",
