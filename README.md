@@ -11,6 +11,10 @@ ePBF tool to troubleshoot container OOMs.
 make up
 ```
 
+- container-oomkill exporter metrics: http://localhost:9090
+- Grafana:        http://localhost:3000 (usr: admin, passwd: admin)
+- Prometheus UI:  http://localhost:9091
+
 ## Debug
 
 ```sh
