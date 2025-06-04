@@ -486,7 +486,7 @@ def parse_line(line):
         ).set(int(stats_kv["uptime_ms"]))
 
         logging.info(
-            f"Recorded OOM kill of {command} [{host_pid}] in container {container_id}, stats:{stats}"
+            f"Recorded OOM kill process {host_pid} ({command}) in container {container_id}, stats:{stats}"
         )
 
     except Exception as e:
