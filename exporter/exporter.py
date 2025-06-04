@@ -25,9 +25,17 @@ container_oomkills_total = Counter(
         "command",
     ],
 )
+container_oomkills_page_size_bytes = Gauge(
+    "container_oomkills_page_size_bytes",
+    f"Page size in bytes, constant",
+    [
+        "container_id",
+        "command",
+    ],
+)
 container_oomkills_oc_total_bytes = Gauge(
     "container_oomkills_oc_total_bytes",
-    f"Number of bytes held by processes evaluated by OOM control, i.e. mem + swap (totalpages * {PAGE_SIZE})",
+    f"Total memory in bytes held by processes under OOM control, i.e. mem + swap (totalpages * {PAGE_SIZE})",
     [
         "container_id",
         "command",
@@ -35,7 +43,8 @@ container_oomkills_oc_total_bytes = Gauge(
 )
 container_oomkills_oc_chosen_points = Gauge(
     "container_oomkills_oc_chosen_points",
-    f"Number of oom_badness points for chosen process",
+    # formula ref: https://github.com/torvalds/linux/blob/master/mm/oom_kill.c#L231-L237
+    f"Number of calculated oom_badness points for the chosen process targeted by the OOM killer ((file + anon + shmem + swapents + pgtables) bytes / {PAGE_SIZE} + oom_score_adj * total bytes / {PAGE_SIZE} * 1000)",
     [
         "container_id",
         "command",
@@ -342,6 +351,10 @@ def parse_line(line):
             container_id=container_id,
             command=command,
         ).inc()
+        container_oomkills_page_size_bytes.labels(
+            container_id=container_id,
+            command=command,
+        ).set(PAGE_SIZE)
 
         container_oomkills_oc_total_bytes.labels(
             container_id=container_id,
