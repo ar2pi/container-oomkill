@@ -43,6 +43,7 @@ docker run -it --privileged --pid=host debian nsenter -t 1 -m -u -n -i bash
 
 ## Resources
 
+- [Memory Management in Linux - Concepts overview](https://docs.kernel.org/admin-guide/mm/concepts.html)
 - [cgroups v2](https://www.kernel.org/doc/html/latest/admin-guide/cgroup-v2.html)
 - [bpftrace in docker](https://hemslo.io/run-ebpf-programs-in-docker-using-docker-bpf/)
 - [Out-of-memory victim selection with BPF](https://lwn.net/Articles/941614/)

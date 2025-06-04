@@ -41,49 +41,49 @@ container_oomkills_oc_chosen_points = Gauge(
         "command",
     ],
 )
-container_oomkills_cgroup_mem_usage_bytes = Gauge(
-    "container_oomkills_cgroup_mem_usage_bytes",
-    f"Container's cgroup memory usage in bytes",
+container_oomkills_memory_usage_bytes = Gauge(
+    "container_oomkills_memory_usage_bytes",
+    f"Container's memory usage in bytes (cgroup memory.current)",
     [
         "container_id",
         "command",
     ],
 )
-container_oomkills_cgroup_mem_limit_bytes = Gauge(
-    "container_oomkills_cgroup_mem_limit_bytes",
-    f"Container's cgroup memory limit in bytes",
+container_oomkills_memory_limit_bytes = Gauge(
+    "container_oomkills_memory_limit_bytes",
+    f"Container's memory limit in bytes (cgroup memory.max)",
     [
         "container_id",
         "command",
     ],
 )
-container_oomkills_cgroup_mem_request_bytes = Gauge(
-    "container_oomkills_cgroup_mem_request_bytes",
-    f"Container's cgroup memory request in bytes",
+container_oomkills_memory_request_bytes = Gauge(
+    "container_oomkills_memory_request_bytes",
+    f"Container's memory request in bytes (cgroup memory.low)",
     [
         "container_id",
         "command",
     ],
 )
-container_oomkills_cgroup_swap_usage_bytes = Gauge(
-    "container_oomkills_cgroup_swap_usage_bytes",
-    f"Container's cgroup swap usage in bytes",
+container_oomkills_swap_usage_bytes = Gauge(
+    "container_oomkills_swap_usage_bytes",
+    f"Container's swap usage in bytes (cgroup memory.swap.current)",
     [
         "container_id",
         "command",
     ],
 )
-container_oomkills_cgroup_swap_limit_bytes = Gauge(
-    "container_oomkills_cgroup_swap_limit_bytes",
-    f"Container's cgroup swap limit in bytes",
+container_oomkills_swap_limit_bytes = Gauge(
+    "container_oomkills_swap_limit_bytes",
+    f"Container's swap limit in bytes (cgroup memory.swap.max)",
     [
         "container_id",
         "command",
     ],
 )
-container_oomkills_cgroup_swappiness = Gauge(
-    "container_oomkills_cgroup_swappiness",
-    f"Container's cgroup swappiness (0-100)",
+container_oomkills_swappiness = Gauge(
+    "container_oomkills_swappiness",
+    f"Container's swappiness [0 to 100] (cgroup memory.swappiness)",
     [
         "container_id",
         "command",
@@ -203,7 +203,7 @@ container_oomkills_stack_vm_bytes = Gauge(
 )
 container_oomkills_oom_score_adj = Gauge(
     "container_oomkills_oom_score_adj",
-    f"OOM priority adjustment (-1000 to 1000). Higher = More likely to be killed",
+    f"OOM priority adjustment [-1000 to 1000]. Higher = More likely to be killed",
     [
         "container_id",
         "command",
@@ -351,27 +351,27 @@ def parse_line(line):
             container_id=container_id,
             command=command,
         ).set(int(stats_kv["oc_chosen_points"]))
-        container_oomkills_cgroup_mem_usage_bytes.labels(
+        container_oomkills_memory_usage_bytes.labels(
             container_id=container_id,
             command=command,
         ).set(int(stats_kv["memcg_memory_usage_pages"]) * PAGE_SIZE)
-        container_oomkills_cgroup_mem_limit_bytes.labels(
+        container_oomkills_memory_limit_bytes.labels(
             container_id=container_id,
             command=command,
         ).set(int(stats_kv["memcg_memory_max_pages"]) * PAGE_SIZE)
-        container_oomkills_cgroup_mem_request_bytes.labels(
+        container_oomkills_memory_request_bytes.labels(
             container_id=container_id,
             command=command,
         ).set(int(stats_kv["memcg_memory_low_pages"]) * PAGE_SIZE)
-        container_oomkills_cgroup_swap_usage_bytes.labels(
+        container_oomkills_swap_usage_bytes.labels(
             container_id=container_id,
             command=command,
         ).set(int(stats_kv["memcg_swap_current_pages"]) * PAGE_SIZE)
-        container_oomkills_cgroup_swap_limit_bytes.labels(
+        container_oomkills_swap_limit_bytes.labels(
             container_id=container_id,
             command=command,
         ).set(int(stats_kv["memcg_swap_max_pages"]) * PAGE_SIZE)
-        container_oomkills_cgroup_swappiness.labels(
+        container_oomkills_swappiness.labels(
             container_id=container_id,
             command=command,
         ).set(int(stats_kv["memcg_swappiness"]))
