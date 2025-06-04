@@ -88,6 +88,222 @@ container_oomkills_cgroup_swappiness = Gauge(
         "command",
     ],
 )
+container_oomkills_rss_filepages_bytes = Gauge(
+    "container_oomkills_rss_filepages_bytes",
+    f"Number of bytes used by file pages",
+    [
+        "container_id",
+        "command",
+    ],
+)
+container_oomkills_rss_anonpages_bytes = Gauge(
+    "container_oomkills_rss_anonpages_bytes",
+    f"Number of bytes used by anonymous pages",
+    [
+        "container_id",
+        "command",
+    ],
+)
+container_oomkills_rss_swapents_bytes = Gauge(
+    "container_oomkills_rss_swapents_bytes",
+    f"Number of bytes used by swap entries",
+    [
+        "container_id",
+        "command",
+    ],
+)
+container_oomkills_rss_shmempages_bytes = Gauge(
+    "container_oomkills_rss_shmempages_bytes",
+    f"Number of bytes used by shared memory pages",
+    [
+        "container_id",
+        "command",
+    ],
+)
+container_oomkills_pgtables_bytes = Gauge(
+    "container_oomkills_pgtables_bytes",
+    f"Number of bytes used by page tables",
+    [
+        "container_id",
+        "command",
+    ],
+)
+container_oomkills_task_size = Gauge(
+    "container_oomkills_task_size",
+    f"Number of bytes used by the task's memory",
+    [
+        "container_id",
+        "command",
+    ],
+)
+container_oomkills_hiwater_rss = Gauge(
+    "container_oomkills_hiwater_rss",
+    f"Number of bytes used by the task's RSS",
+    [
+        "container_id",
+        "command",
+    ],
+)
+container_oomkills_hiwater_vm = Gauge(
+    "container_oomkills_hiwater_vm",
+    f"Number of bytes used by the task's VM",
+    [
+        "container_id",
+        "command",
+    ],
+)
+container_oomkills_total_vm = Gauge(
+    "container_oomkills_total_vm",
+    f"Number of bytes used by the task's total VM",
+    [
+        "container_id",
+        "command",
+    ],
+)
+container_oomkills_locked_vm = Gauge(
+    "container_oomkills_locked_vm",
+    f"Number of bytes used by the task's locked VM",
+    [
+        "container_id",
+        "command",
+    ],
+)
+container_oomkills_pinned_vm = Gauge(
+    "container_oomkills_pinned_vm",
+    f"Number of bytes used by the task's pinned VM",
+    [
+        "container_id",
+        "command",
+    ],
+)
+container_oomkills_data_vm = Gauge(
+    "container_oomkills_data_vm",
+    f"Number of bytes used by the task's data VM",
+    [
+        "container_id",
+        "command",
+    ],
+)
+container_oomkills_exec_vm = Gauge(
+    "container_oomkills_exec_vm",
+    f"Number of bytes used by the task's exec VM",
+    [
+        "container_id",
+        "command",
+    ],
+)
+container_oomkills_stack_vm = Gauge(
+    "container_oomkills_stack_vm",
+    f"Number of bytes used by the task's stack VM",
+    [
+        "container_id",
+        "command",
+    ],
+)
+container_oomkills_oom_score_adj = Gauge(
+    "container_oomkills_oom_score_adj",
+    f"OOM score adjustment of the task",
+    [
+        "container_id",
+        "command",
+    ],
+)
+container_oomkills_num_threads = Gauge(
+    "container_oomkills_num_threads",
+    f"Number of threads in the process",
+    [
+        "container_id",
+        "command",
+    ],
+)
+container_oomkills_min_flt = Gauge(
+    "container_oomkills_min_flt",
+    f"Number of minor faults",
+    [
+        "container_id",
+        "command",
+    ],
+)
+container_oomkills_maj_flt = Gauge(
+    "container_oomkills_maj_flt",
+    f"Number of major faults",
+    [
+        "container_id",
+        "command",
+    ],
+)
+container_oomkills_flags = Gauge(
+    "container_oomkills_flags",
+    f"Flags of the process",
+    [
+        "container_id",
+        "command",
+    ],
+)
+container_oomkills_prio = Gauge(
+    "container_oomkills_prio",
+    f"Priority of the process",
+    [
+        "container_id",
+        "command",
+    ],
+)
+container_oomkills_static_prio = Gauge(
+    "container_oomkills_static_prio",
+    f"Static priority of the process",
+    [
+        "container_id",
+        "command",
+    ],
+)
+container_oomkills_utime = Gauge(
+    "container_oomkills_utime",
+    f"User time of the process",
+    [
+        "container_id",
+        "command",
+    ],
+)
+container_oomkills_stime = Gauge(
+    "container_oomkills_stime",
+    f"System time of the process",
+    [
+        "container_id",
+        "command",
+    ],
+)
+container_oomkills_gtime = Gauge(
+    "container_oomkills_gtime",
+    f"Guest time of the process",
+    [
+        "container_id",
+        "command",
+    ],
+)
+container_oomkills_start_time_ns = Gauge(
+    "container_oomkills_start_time_ns",
+    f"Start time of the process in nanoseconds",
+    [
+        "container_id",
+        "command",
+    ],
+)
+container_oomkills_start_boottime_ns = Gauge(
+    "container_oomkills_start_boottime_ns",
+    f"Start time of the process since boot time in nanoseconds",
+    [
+        "container_id",
+        "command",
+    ],
+)
+container_oomkills_uptime_ms = Gauge(
+    "container_oomkills_uptime_ms",
+    f"Uptime of the system in milliseconds",
+    [
+        "container_id",
+        "command",
+    ],
+)
 
 
 def parse_line(line):
@@ -134,7 +350,6 @@ def parse_line(line):
             container_id=container_id,
             command=command,
         ).set(int(stats_kv["oc_chosen_points"]))
-
         container_oomkills_cgroup_mem_usage_bytes.labels(
             container_id=container_id,
             command=command,
@@ -159,11 +374,118 @@ def parse_line(line):
             container_id=container_id,
             command=command,
         ).set(int(stats_kv["memcg_swappiness"]))
-
-        # @TODO: finish parsing the rest of the stats
+        container_oomkills_rss_filepages_bytes.labels(
+            container_id=container_id,
+            command=command,
+        ).set(int(stats_kv["mm_rss_filepages"]) * PAGE_SIZE)
+        container_oomkills_rss_anonpages_bytes.labels(
+            container_id=container_id,
+            command=command,
+        ).set(int(stats_kv["mm_rss_anonpages"]) * PAGE_SIZE)
+        container_oomkills_rss_swapents_bytes.labels(
+            container_id=container_id,
+            command=command,
+        ).set(int(stats_kv["mm_rss_swapents"]) * PAGE_SIZE)
+        container_oomkills_rss_shmempages_bytes.labels(
+            container_id=container_id,
+            command=command,
+        ).set(int(stats_kv["mm_rss_shmempages"]) * PAGE_SIZE)
+        container_oomkills_pgtables_bytes.labels(
+            container_id=container_id,
+            command=command,
+        ).set(int(stats_kv["mm_pgtables_bytes"]))
+        container_oomkills_task_size.labels(
+            container_id=container_id,
+            command=command,
+        ).set(int(stats_kv["mm_task_size"]))
+        container_oomkills_hiwater_rss.labels(
+            container_id=container_id,
+            command=command,
+        ).set(int(stats_kv["mm_hiwater_rss"]))
+        container_oomkills_hiwater_vm.labels(
+            container_id=container_id,
+            command=command,
+        ).set(int(stats_kv["mm_hiwater_vm"]))
+        container_oomkills_total_vm.labels(
+            container_id=container_id,
+            command=command,
+        ).set(int(stats_kv["mm_total_vm"]))
+        container_oomkills_locked_vm.labels(
+            container_id=container_id,
+            command=command,
+        ).set(int(stats_kv["mm_locked_vm"]))
+        container_oomkills_pinned_vm.labels(
+            container_id=container_id,
+            command=command,
+        ).set(int(stats_kv["mm_pinned_vm"]))
+        container_oomkills_data_vm.labels(
+            container_id=container_id,
+            command=command,
+        ).set(int(stats_kv["mm_data_vm"]))
+        container_oomkills_exec_vm.labels(
+            container_id=container_id,
+            command=command,
+        ).set(int(stats_kv["mm_exec_vm"]))
+        container_oomkills_stack_vm.labels(
+            container_id=container_id,
+            command=command,
+        ).set(int(stats_kv["mm_stack_vm"]))
+        container_oomkills_oom_score_adj.labels(
+            container_id=container_id,
+            command=command,
+        ).set(int(stats_kv["proc_oom_score_adj"]))
+        container_oomkills_num_threads.labels(
+            container_id=container_id,
+            command=command,
+        ).set(int(stats_kv["proc_num_threads"]))
+        container_oomkills_min_flt.labels(
+            container_id=container_id,
+            command=command,
+        ).set(int(stats_kv["proc_min_flt"]))
+        container_oomkills_maj_flt.labels(
+            container_id=container_id,
+            command=command,
+        ).set(int(stats_kv["proc_maj_flt"]))
+        # arguably flags should be a label? worried about cardinality though
+        container_oomkills_flags.labels(
+            container_id=container_id,
+            command=command,
+        ).set(int(stats_kv["proc_flags"]))
+        container_oomkills_prio.labels(
+            container_id=container_id,
+            command=command,
+        ).set(int(stats_kv["proc_prio"]))
+        container_oomkills_static_prio.labels(
+            container_id=container_id,
+            command=command,
+        ).set(int(stats_kv["proc_static_prio"]))
+        container_oomkills_utime.labels(
+            container_id=container_id,
+            command=command,
+        ).set(int(stats_kv["proc_utime"]))
+        container_oomkills_stime.labels(
+            container_id=container_id,
+            command=command,
+        ).set(int(stats_kv["proc_stime"]))
+        container_oomkills_gtime.labels(
+            container_id=container_id,
+            command=command,
+        ).set(int(stats_kv["proc_gtime"]))
+        container_oomkills_start_time_ns.labels(
+            container_id=container_id,
+            command=command,
+        ).set(int(stats_kv["proc_start_time_ns"]))
+        container_oomkills_start_boottime_ns.labels(
+            container_id=container_id,
+            command=command,
+        ).set(int(stats_kv["proc_start_boottime_ns"]))
+        container_oomkills_uptime_ms.labels(
+            container_id=container_id,
+            command=command,
+        ).set(int(stats_kv["uptime_ms"]))
 
         logging.info(
-            f"Recorded OOM kill of {command} [{host_pid}] in container {container_id}, stats: {stats}"
+            f"Recorded OOM kill of {command} [{host_pid}] in container {container_id}, stats:{stats}"
         )
 
     except Exception as e:

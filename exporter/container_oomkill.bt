@@ -81,11 +81,11 @@ kprobe:oom_kill_process
 		$oc->chosen->flags,                 // process flags
 		$oc->chosen->prio,                  // process priority
 		$oc->chosen->static_prio,           // process static priority
-		$oc->chosen->utime,                 // process CPU user time in clock ticks
-		$oc->chosen->stime,                 // process CPU system time in clock ticks
-		$oc->chosen->gtime,                 // process CPU guest time in clock ticks
-		$oc->chosen->start_time,            // process start time in ns
-		$oc->chosen->start_boottime);       // process start time since boot time in ns
+		$oc->chosen->utime,                 // CPU user time in clock ticks
+		$oc->chosen->stime,                 // CPU system time in clock ticks
+		$oc->chosen->gtime,                 // CPU guest time in clock ticks
+		$oc->chosen->start_time,            // start time in ns
+		$oc->chosen->start_boottime);       // start time since boot time in ns
 
 	// calculated stats
 	printf(" uptime_ms=\"%lld\"",

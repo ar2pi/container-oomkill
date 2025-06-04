@@ -11,4 +11,4 @@ indent_size = 4
 
 [*.bt]
 indent_style = tab
-indent_size = unset
+indent_size = 4
