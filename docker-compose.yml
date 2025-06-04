@@ -8,7 +8,7 @@ services:
     privileged: true  # required to run bpftrace, as an alternative could try setting CAP_BPF, CAP_PERFMON
     pid: host         # required to trace processes from host
     ports:
-      - "9090:9090"
+      - "9262:9262"
 
   mem-stress:
     image: python:3-slim
@@ -47,10 +47,10 @@ services:
       - ./prometheus:/etc/prometheus
       - prometheus_data:/prometheus
     command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
     ports:
-      - "9091:9090"
+      - "9090:9090"
 
   grafana:
     image: grafana/grafana:latest

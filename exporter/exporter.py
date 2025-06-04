@@ -10,6 +10,7 @@ from prometheus_client import Counter, Gauge, start_http_server
 
 # @TODO: just in case, dynamically check system page size?
 PAGE_SIZE = 4096
+EXPORTER_PORT = 9262
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
 
@@ -505,8 +506,8 @@ def run_bpftrace():
 
 def main():
     # Start Prometheus HTTP server
-    start_http_server(9090)
-    logging.info("Prometheus exporter started on port 9090")
+    start_http_server(EXPORTER_PORT)
+    logging.info(f"Prometheus exporter started on port {EXPORTER_PORT}")
 
     # Start bpftrace in a separate thread
     bpftrace_thread = threading.Thread(target=run_bpftrace, daemon=True)

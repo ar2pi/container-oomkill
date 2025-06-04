@@ -12,6 +12,6 @@ WORKDIR /app
 
 COPY *.bt exporter.py /app
 
-EXPOSE 9090
+EXPOSE 9262
 
 CMD ["/app/exporter.py"]
