@@ -43,7 +43,7 @@ container_oomkills_oc_chosen_points = Gauge(
 )
 container_oomkills_cgroup_mem_usage_bytes = Gauge(
     "container_oomkills_cgroup_mem_usage_bytes",
-    f"Number of bytes used by the container's memory cgroup",
+    f"Container's cgroup memory usage in bytes",
     [
         "container_id",
         "command",
@@ -51,7 +51,7 @@ container_oomkills_cgroup_mem_usage_bytes = Gauge(
 )
 container_oomkills_cgroup_mem_limit_bytes = Gauge(
     "container_oomkills_cgroup_mem_limit_bytes",
-    f"Number of bytes limit of the container's memory cgroup",
+    f"Container's cgroup memory limit in bytes",
     [
         "container_id",
         "command",
@@ -59,7 +59,7 @@ container_oomkills_cgroup_mem_limit_bytes = Gauge(
 )
 container_oomkills_cgroup_mem_request_bytes = Gauge(
     "container_oomkills_cgroup_mem_request_bytes",
-    f"Number of bytes request of the container's memory cgroup",
+    f"Container's cgroup memory request in bytes",
     [
         "container_id",
         "command",
@@ -67,7 +67,7 @@ container_oomkills_cgroup_mem_request_bytes = Gauge(
 )
 container_oomkills_cgroup_swap_usage_bytes = Gauge(
     "container_oomkills_cgroup_swap_usage_bytes",
-    f"Number of bytes used by the container's swap cgroup",
+    f"Container's cgroup swap usage in bytes",
     [
         "container_id",
         "command",
@@ -75,7 +75,7 @@ container_oomkills_cgroup_swap_usage_bytes = Gauge(
 )
 container_oomkills_cgroup_swap_limit_bytes = Gauge(
     "container_oomkills_cgroup_swap_limit_bytes",
-    f"Number of bytes limit of the container's swap cgroup",
+    f"Container's cgroup swap limit in bytes",
     [
         "container_id",
         "command",
@@ -83,23 +83,23 @@ container_oomkills_cgroup_swap_limit_bytes = Gauge(
 )
 container_oomkills_cgroup_swappiness = Gauge(
     "container_oomkills_cgroup_swappiness",
-    f"Swappiness of the container's cgroup (0-100)",
+    f"Container's cgroup swappiness (0-100)",
     [
         "container_id",
         "command",
     ],
 )
-container_oomkills_rss_filepages_bytes = Gauge(
-    "container_oomkills_rss_filepages_bytes",
-    f"Number of bytes used by file pages",
+container_oomkills_rss_file_bytes = Gauge(
+    "container_oomkills_rss_file_bytes",
+    f"Process file memory usage in bytes",
     [
         "container_id",
         "command",
     ],
 )
-container_oomkills_rss_anonpages_bytes = Gauge(
-    "container_oomkills_rss_anonpages_bytes",
-    f"Number of bytes used by anonymous pages",
+container_oomkills_rss_anon_bytes = Gauge(
+    "container_oomkills_rss_anon_bytes",
+    f"Process anonymous (i.e. stack + heap) memory usage in bytes",
     [
         "container_id",
         "command",
@@ -107,15 +107,15 @@ container_oomkills_rss_anonpages_bytes = Gauge(
 )
 container_oomkills_rss_swapents_bytes = Gauge(
     "container_oomkills_rss_swapents_bytes",
-    f"Number of bytes used by swap entries (pages moved to swap space)",
+    f"Process swap usage in bytes",
     [
         "container_id",
         "command",
     ],
 )
-container_oomkills_rss_shmempages_bytes = Gauge(
-    "container_oomkills_rss_shmempages_bytes",
-    f"Number of bytes used by shared memory pages",
+container_oomkills_rss_shmem_bytes = Gauge(
+    "container_oomkills_rss_shmem_bytes",
+    f"Process shared memory usage in bytes",
     [
         "container_id",
         "command",
@@ -155,7 +155,7 @@ container_oomkills_hiwater_vm_bytes = Gauge(
 )
 container_oomkills_total_vm_bytes = Gauge(
     "container_oomkills_total_vm_bytes",
-    f"Total virtual memory allocated in bytes (total_vm * {PAGE_SIZE})",
+    f"Total virtual memory allocated in bytes",
     [
         "container_id",
         "command",
@@ -163,7 +163,7 @@ container_oomkills_total_vm_bytes = Gauge(
 )
 container_oomkills_locked_vm_bytes = Gauge(
     "container_oomkills_locked_vm_bytes",
-    f"Pages that have PG_mlocked set in bytes (locked_vm * {PAGE_SIZE})",
+    f"Pages that have PG_mlocked set in bytes",
     [
         "container_id",
         "command",
@@ -179,7 +179,7 @@ container_oomkills_pinned_vm = Gauge(
 )
 container_oomkills_data_vm_bytes = Gauge(
     "container_oomkills_data_vm_bytes",
-    f"VM_WRITE & ~VM_SHARED & ~VM_STACK in bytes (data_vm * {PAGE_SIZE})",
+    f"VM_WRITE & ~VM_SHARED & ~VM_STACK in bytes",
     [
         "container_id",
         "command",
@@ -187,7 +187,7 @@ container_oomkills_data_vm_bytes = Gauge(
 )
 container_oomkills_exec_vm_bytes = Gauge(
     "container_oomkills_exec_vm_bytes",
-    f"VM_EXEC & ~VM_WRITE & ~VM_STACK in bytes (exec_vm * {PAGE_SIZE})",
+    f"VM_EXEC & ~VM_WRITE & ~VM_STACK in bytes",
     [
         "container_id",
         "command",
@@ -195,7 +195,7 @@ container_oomkills_exec_vm_bytes = Gauge(
 )
 container_oomkills_stack_vm_bytes = Gauge(
     "container_oomkills_stack_vm_bytes",
-    f"VM_STACK in bytes (stack_vm * {PAGE_SIZE})",
+    f"VM_STACK in bytes",
     [
         "container_id",
         "command",
@@ -375,11 +375,11 @@ def parse_line(line):
             container_id=container_id,
             command=command,
         ).set(int(stats_kv["memcg_swappiness"]))
-        container_oomkills_rss_filepages_bytes.labels(
+        container_oomkills_rss_file_bytes.labels(
             container_id=container_id,
             command=command,
         ).set(int(stats_kv["mm_rss_filepages"]) * PAGE_SIZE)
-        container_oomkills_rss_anonpages_bytes.labels(
+        container_oomkills_rss_anon_bytes.labels(
             container_id=container_id,
             command=command,
         ).set(int(stats_kv["mm_rss_anonpages"]) * PAGE_SIZE)
@@ -387,7 +387,7 @@ def parse_line(line):
             container_id=container_id,
             command=command,
         ).set(int(stats_kv["mm_rss_swapents"]) * PAGE_SIZE)
-        container_oomkills_rss_shmempages_bytes.labels(
+        container_oomkills_rss_shmem_bytes.labels(
             container_id=container_id,
             command=command,
         ).set(int(stats_kv["mm_rss_shmempages"]) * PAGE_SIZE)
@@ -406,15 +406,15 @@ def parse_line(line):
         container_oomkills_hiwater_vm_bytes.labels(
             container_id=container_id,
             command=command,
-        ).set(int(stats_kv["mm_hiwater_vm"]))
+        ).set(int(stats_kv["mm_hiwater_vm"]) * PAGE_SIZE)
         container_oomkills_total_vm_bytes.labels(
             container_id=container_id,
             command=command,
-        ).set(int(stats_kv["mm_total_vm"]))
+        ).set(int(stats_kv["mm_total_vm"]) * PAGE_SIZE)
         container_oomkills_locked_vm_bytes.labels(
             container_id=container_id,
             command=command,
-        ).set(int(stats_kv["mm_locked_vm"]))
+        ).set(int(stats_kv["mm_locked_vm"]) * PAGE_SIZE)
         container_oomkills_pinned_vm.labels(
             container_id=container_id,
             command=command,
@@ -422,15 +422,15 @@ def parse_line(line):
         container_oomkills_data_vm_bytes.labels(
             container_id=container_id,
             command=command,
-        ).set(int(stats_kv["mm_data_vm"]))
+        ).set(int(stats_kv["mm_data_vm"]) * PAGE_SIZE)
         container_oomkills_exec_vm_bytes.labels(
             container_id=container_id,
             command=command,
-        ).set(int(stats_kv["mm_exec_vm"]))
+        ).set(int(stats_kv["mm_exec_vm"]) * PAGE_SIZE)
         container_oomkills_stack_vm_bytes.labels(
             container_id=container_id,
             command=command,
-        ).set(int(stats_kv["mm_stack_vm"]))
+        ).set(int(stats_kv["mm_stack_vm"]) * PAGE_SIZE)
         container_oomkills_oom_score_adj.labels(
             container_id=container_id,
             command=command,
