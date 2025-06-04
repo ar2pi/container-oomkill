@@ -107,7 +107,7 @@ container_oomkills_rss_anonpages_bytes = Gauge(
 )
 container_oomkills_rss_swapents_bytes = Gauge(
     "container_oomkills_rss_swapents_bytes",
-    f"Number of bytes used by swap entries",
+    f"Number of bytes used by swap entries (pages moved to swap space)",
     [
         "container_id",
         "command",
@@ -123,47 +123,47 @@ container_oomkills_rss_shmempages_bytes = Gauge(
 )
 container_oomkills_pgtables_bytes = Gauge(
     "container_oomkills_pgtables_bytes",
-    f"Number of bytes used by page tables",
+    f"Memory used for page tables (kernel overhead for memory mapping) in bytes",
     [
         "container_id",
         "command",
     ],
 )
-container_oomkills_task_size = Gauge(
+container_oomkills_task_size_bytes = Gauge(
     "container_oomkills_task_size",
-    f"Number of bytes used by the task's memory",
+    f"Maximum size of a user process's address space in bytes, constant",
     [
         "container_id",
         "command",
     ],
 )
-container_oomkills_hiwater_rss = Gauge(
-    "container_oomkills_hiwater_rss",
-    f"Number of bytes used by the task's RSS",
+container_oomkills_hiwater_rss_bytes = Gauge(
+    "container_oomkills_hiwater_rss_bytes",
+    f"High-watermark of RSS usage in bytes",
     [
         "container_id",
         "command",
     ],
 )
-container_oomkills_hiwater_vm = Gauge(
-    "container_oomkills_hiwater_vm",
-    f"Number of bytes used by the task's VM",
+container_oomkills_hiwater_vm_bytes = Gauge(
+    "container_oomkills_hiwater_vm_bytes",
+    f"High-water virtual memory usage in bytes",
     [
         "container_id",
         "command",
     ],
 )
-container_oomkills_total_vm = Gauge(
-    "container_oomkills_total_vm",
-    f"Number of bytes used by the task's total VM",
+container_oomkills_total_vm_bytes = Gauge(
+    "container_oomkills_total_vm_bytes",
+    f"Total virtual memory allocated in bytes (total_vm * {PAGE_SIZE})",
     [
         "container_id",
         "command",
     ],
 )
-container_oomkills_locked_vm = Gauge(
-    "container_oomkills_locked_vm",
-    f"Number of bytes used by the task's locked VM",
+container_oomkills_locked_vm_bytes = Gauge(
+    "container_oomkills_locked_vm_bytes",
+    f"Pages that have PG_mlocked set in bytes (locked_vm * {PAGE_SIZE})",
     [
         "container_id",
         "command",
@@ -171,31 +171,31 @@ container_oomkills_locked_vm = Gauge(
 )
 container_oomkills_pinned_vm = Gauge(
     "container_oomkills_pinned_vm",
-    f"Number of bytes used by the task's pinned VM",
+    f"Monotonic refcount",
     [
         "container_id",
         "command",
     ],
 )
-container_oomkills_data_vm = Gauge(
-    "container_oomkills_data_vm",
-    f"Number of bytes used by the task's data VM",
+container_oomkills_data_vm_bytes = Gauge(
+    "container_oomkills_data_vm_bytes",
+    f"VM_WRITE & ~VM_SHARED & ~VM_STACK in bytes (data_vm * {PAGE_SIZE})",
     [
         "container_id",
         "command",
     ],
 )
-container_oomkills_exec_vm = Gauge(
-    "container_oomkills_exec_vm",
-    f"Number of bytes used by the task's exec VM",
+container_oomkills_exec_vm_bytes = Gauge(
+    "container_oomkills_exec_vm_bytes",
+    f"VM_EXEC & ~VM_WRITE & ~VM_STACK in bytes (exec_vm * {PAGE_SIZE})",
     [
         "container_id",
         "command",
     ],
 )
-container_oomkills_stack_vm = Gauge(
-    "container_oomkills_stack_vm",
-    f"Number of bytes used by the task's stack VM",
+container_oomkills_stack_vm_bytes = Gauge(
+    "container_oomkills_stack_vm_bytes",
+    f"VM_STACK in bytes (stack_vm * {PAGE_SIZE})",
     [
         "container_id",
         "command",
@@ -203,7 +203,7 @@ container_oomkills_stack_vm = Gauge(
 )
 container_oomkills_oom_score_adj = Gauge(
     "container_oomkills_oom_score_adj",
-    f"OOM score adjustment of the task",
+    f"OOM priority adjustment (-1000 to 1000). Higher = More likely to be killed",
     [
         "container_id",
         "command",
@@ -219,7 +219,7 @@ container_oomkills_num_threads = Gauge(
 )
 container_oomkills_min_flt = Gauge(
     "container_oomkills_min_flt",
-    f"Number of minor faults",
+    f"Number of minor page faults",
     [
         "container_id",
         "command",
@@ -227,7 +227,7 @@ container_oomkills_min_flt = Gauge(
 )
 container_oomkills_maj_flt = Gauge(
     "container_oomkills_maj_flt",
-    f"Number of major faults",
+    f"Number of major page faults",
     [
         "container_id",
         "command",
@@ -259,7 +259,7 @@ container_oomkills_static_prio = Gauge(
 )
 container_oomkills_utime = Gauge(
     "container_oomkills_utime",
-    f"User time of the process",
+    f"CPU user time of the process in clock ticks",
     [
         "container_id",
         "command",
@@ -267,7 +267,7 @@ container_oomkills_utime = Gauge(
 )
 container_oomkills_stime = Gauge(
     "container_oomkills_stime",
-    f"System time of the process",
+    f"CPU system time of the process in clock ticks",
     [
         "container_id",
         "command",
@@ -275,7 +275,7 @@ container_oomkills_stime = Gauge(
 )
 container_oomkills_gtime = Gauge(
     "container_oomkills_gtime",
-    f"Guest time of the process",
+    f"CPU guest time of the process in clock ticks",
     [
         "container_id",
         "command",
@@ -291,7 +291,7 @@ container_oomkills_start_time_ns = Gauge(
 )
 container_oomkills_start_boottime_ns = Gauge(
     "container_oomkills_start_boottime_ns",
-    f"Start time of the process since boot time in nanoseconds",
+    f"Start boot time of the process in nanoseconds",
     [
         "container_id",
         "command",
@@ -299,7 +299,7 @@ container_oomkills_start_boottime_ns = Gauge(
 )
 container_oomkills_uptime_ms = Gauge(
     "container_oomkills_uptime_ms",
-    f"Uptime of the system in milliseconds",
+    f"Uptime of the process in milliseconds",
     [
         "container_id",
         "command",
@@ -395,23 +395,23 @@ def parse_line(line):
             container_id=container_id,
             command=command,
         ).set(int(stats_kv["mm_pgtables_bytes"]))
-        container_oomkills_task_size.labels(
+        container_oomkills_task_size_bytes.labels(
             container_id=container_id,
             command=command,
         ).set(int(stats_kv["mm_task_size"]))
-        container_oomkills_hiwater_rss.labels(
+        container_oomkills_hiwater_rss_bytes.labels(
             container_id=container_id,
             command=command,
         ).set(int(stats_kv["mm_hiwater_rss"]))
-        container_oomkills_hiwater_vm.labels(
+        container_oomkills_hiwater_vm_bytes.labels(
             container_id=container_id,
             command=command,
         ).set(int(stats_kv["mm_hiwater_vm"]))
-        container_oomkills_total_vm.labels(
+        container_oomkills_total_vm_bytes.labels(
             container_id=container_id,
             command=command,
         ).set(int(stats_kv["mm_total_vm"]))
-        container_oomkills_locked_vm.labels(
+        container_oomkills_locked_vm_bytes.labels(
             container_id=container_id,
             command=command,
         ).set(int(stats_kv["mm_locked_vm"]))
@@ -419,15 +419,15 @@ def parse_line(line):
             container_id=container_id,
             command=command,
         ).set(int(stats_kv["mm_pinned_vm"]))
-        container_oomkills_data_vm.labels(
+        container_oomkills_data_vm_bytes.labels(
             container_id=container_id,
             command=command,
         ).set(int(stats_kv["mm_data_vm"]))
-        container_oomkills_exec_vm.labels(
+        container_oomkills_exec_vm_bytes.labels(
             container_id=container_id,
             command=command,
         ).set(int(stats_kv["mm_exec_vm"]))
-        container_oomkills_stack_vm.labels(
+        container_oomkills_stack_vm_bytes.labels(
             container_id=container_id,
             command=command,
         ).set(int(stats_kv["mm_stack_vm"]))

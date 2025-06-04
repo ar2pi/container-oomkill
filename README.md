@@ -5,6 +5,10 @@ ePBF tool to troubleshoot container OOMs.
 [bpftrace](https://github.com/bpftrace/bpftrace)
 - [oomkill.bt](https://github.com/bpftrace/bpftrace/blob/master/tools/oomkill.bt)
 
+## Build
+
+@TODO: document build process
+
 ## Run
 
 ```sh
