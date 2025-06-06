@@ -7,7 +7,11 @@
  * Prints the process host pid, container id, cgroup path, command and a few other stats.
  * Note: There's no guarantee that the OOM killed process is within a "container", this script just assumes it is.
  *
- * USAGE: container_oomkill.bt
+ * Example of usage:
+ *
+ * # ./container_oomkill.bt
+ * Tracing oom_kill_process()... Ctrl-C to end.
+ * 2025-06-05 09:30:09,360 probe="kprobe:oom_kill_process" host_pid="72580" container_id="b7f59b0d6637" cgroup_path="unified:/docker/b7f59b0d6637c8f96e8c6e2d18f0fbe00eff3fb5c51c454540077eff2bf1e345,cgroup:/docker/b7f59b0d6637c8f96e8c6e2d18f0fbe00eff3fb5c51c454540077eff2bf1e345" command="python3" oc_totalpages="32768" oc_chosen_points="33927" memcg_memory_usage_pages="32768" memcg_memory_max_pages="32768" memcg_memory_low_pages="16384" memcg_swap_current_pages="0" memcg_swap_max_pages="0" memcg_swappiness="60" mm_rss_filepages="1324" mm_rss_anonpages="32496" mm_rss_swapents="0" mm_rss_shmempages="0" mm_pgtables_bytes="438272" mm_task_size="0" mm_hiwater_rss="2525" mm_hiwater_vm="3688" mm_total_vm="35415" mm_locked_vm="0" mm_pinned_vm="0" mm_data_vm="33546" mm_exec_vm="1615" mm_stack_vm="33" proc_oom_score_adj="0" proc_num_threads="1" proc_min_flt="31150" proc_maj_flt="0" proc_flags="4194560" proc_prio="120" proc_static_prio="120" proc_utime="22000000" proc_stime="70000000" proc_gtime="0" proc_start_time_ns="247809172406382" proc_start_boottime_ns="247809172406465" uptime_ms="3187"
  *
  * Adapted from the original bpftrace's tools/oomkill.bt by Brendan Gregg:
  * -> https://github.com/bpftrace/bpftrace/blob/master/tools/oomkill.bt
@@ -22,16 +26,20 @@ BEGIN
 	printf("Tracing oom_kill_process()... Hit Ctrl-C to end.\n");
 }
 
+// fn: static void oom_kill_process(struct oom_control *oc, const char *message)
+// https://sourcegraph.com/github.com/torvalds/linux/-/blob/mm/oom_kill.c?L1017
 kprobe:oom_kill_process
 {
 	$oc = (struct oom_control *)arg0;
+	$message = str(arg1);
 
 	// print datetime with milliseconds precision
 	printf("%s", strftime("%Y-%m-%d %H:%M:%S", nsecs));
 	printf(",%03d", (nsecs % 1000000000) / 1000000);
 
 	// print labels
-	printf(" probe=\"kprobe:oom_kill_process\" host_pid=\"%d\" container_id=\"%s\" cgroup_path=\"%s\" command=\"%s\"",
+	printf(" probe=\"kprobe:oom_kill_process\" message=\"%s\" host_pid=\"%d\" container_id=\"%s\" cgroup_path=\"%s\" command=\"%s\"",
+		$message,
 		$oc->chosen->pid,
 		$oc->chosen->nsproxy->uts_ns->name.nodename,
 		cgroup_path(cgroup),

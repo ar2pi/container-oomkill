@@ -100,7 +100,7 @@ container_oomkills_swappiness = Gauge(
 )
 container_oomkills_rss_file_bytes = Gauge(
     "container_oomkills_rss_file_bytes",
-    f"Process file memory usage in bytes",
+    f"Process resident set size used for file memory mapping in bytes",
     [
         "container_id",
         "command",
@@ -108,7 +108,7 @@ container_oomkills_rss_file_bytes = Gauge(
 )
 container_oomkills_rss_anon_bytes = Gauge(
     "container_oomkills_rss_anon_bytes",
-    f"Process anonymous (i.e. stack + heap) memory usage in bytes",
+    f"Process resident set size used for anonymous memory (i.e. stack + heap) in bytes",
     [
         "container_id",
         "command",
@@ -116,7 +116,7 @@ container_oomkills_rss_anon_bytes = Gauge(
 )
 container_oomkills_rss_swapents_bytes = Gauge(
     "container_oomkills_rss_swapents_bytes",
-    f"Process swap usage in bytes",
+    f"Process anonymous swap entries in bytes",
     [
         "container_id",
         "command",
@@ -124,7 +124,7 @@ container_oomkills_rss_swapents_bytes = Gauge(
 )
 container_oomkills_rss_shmem_bytes = Gauge(
     "container_oomkills_rss_shmem_bytes",
-    f"Process shared memory usage in bytes",
+    f"Process resident set size used for shared memory in bytes",
     [
         "container_id",
         "command",
@@ -328,7 +328,7 @@ def parse_line(line):
         # 64MiB hard limit, 64MiB soft limit, 64MiB swap
         # 2025-06-03 16:15:11,491 probe="kprobe:oom_kill_process" host_pid="40464" container_id="85c60f0c4603" cgroup_path="unified:/docker/85c60f0c4603da90486468dd727752ad61d8425923376de7ef0fac897cc4f70b,cgroup:/docker/85c60f0c4603da90486468dd727752ad61d8425923376de7ef0fac897cc4f70b" command="python3" oc_totalpages="32768" oc_chosen_points="33472" memcg_memory_usage_pages="16384" memcg_memory_max_pages="16384" memcg_memory_low_pages="16384" memcg_swap_current_pages="16384" memcg_swap_max_pages="16384" memcg_swappiness="60" mm_rss_filepages="1317" mm_rss_anonpages="15697" mm_rss_swapents="16352" mm_rss_shmempages="0" mm_pgtables_bytes="434176" mm_task_size="0" mm_hiwater_rss="17494" mm_hiwater_vm="3432" mm_total_vm="35159" mm_locked_vm="0" mm_pinned_vm="0" mm_data_vm="33290" mm_exec_vm="1615" mm_stack_vm="33" proc_num_threads="1" proc_min_flt="18631" proc_maj_flt="161" proc_flags="4194560" proc_prio="120" proc_static_prio="120" proc_utime="24000000" proc_stime="84000000" proc_gtime="0" proc_start_time_ns="169688273567534" proc_start_boottime_ns="169688273567617" uptime_ms="3217"
         match = re.match(
-            r'.*probe="kprobe:oom_kill_process" host_pid="(\d+)" container_id="([^"]*)" cgroup_path="([^"]*)" command="([^"]+)"(.*)',
+            r'.*probe="kprobe:oom_kill_process" message="([^"]*)" host_pid="(\d+)" container_id="([^"]*)" cgroup_path="([^"]*)" command="([^"]+)"(.*)',
             line,
         )
 
@@ -336,6 +336,7 @@ def parse_line(line):
             return
 
         (
+            message,
             host_pid,
             container_id,
             cgroup_path,

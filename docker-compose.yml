@@ -24,8 +24,8 @@ services:
           memory: 128MiB
         reservations:
           memory: 64MiB
-    # mem_swappiness: 0     # doesn't seem to work to restrict swap usage, nor does it change effective swappiness value in memcg
-    memswap_limit: 128MiB   # by default swap = mem => 2x total memory, disable it by setting memswap_limit = mem_limit
+    # mem_swappiness: 0     # this doesn't seem to work to restrict swap usage, nor does it change effective swappiness value in memcg
+    memswap_limit: 128MiB   # by default swap = mem => 2x total memory, disable swap by setting memswap_limit = mem_limit
     stop_grace_period: 1s
 
   # stress:

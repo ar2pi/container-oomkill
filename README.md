@@ -1,6 +1,6 @@
 # container-oomkill (WIP)
 
-ePBF tool to troubleshoot container OOMs.
+eBPF tool to troubleshoot container OOMs.
 
 [bpftrace](https://github.com/bpftrace/bpftrace)
 - [oomkill.bt](https://github.com/bpftrace/bpftrace/blob/master/tools/oomkill.bt)
@@ -23,6 +23,9 @@ Running service urls
 ## Debug
 
 ```sh
+# list oom kernel probes
+docker exec -it container-oomkill-exporter-1 bpftrace -l "kprobe:oom*"
+
 docker container logs -f container-oomkill-exporter-1
 
 docker exec -it container-oomkill-exporter-1 ./container_oomkill.bt
@@ -117,5 +120,6 @@ docker run -it --privileged --pid=host debian nsenter -t 1 -m -u -n -i bash
 
 ## @TODO:
 
+- [ ] build grafana dashboard
 - [ ] try it out in kubernetes
 - [ ] build container-oomkill-exporter image and push to public repository
