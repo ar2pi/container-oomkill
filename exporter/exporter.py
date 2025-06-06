@@ -344,6 +344,12 @@ def parse_line(line):
             stats,
         ) = match.groups()
 
+        if message != "Memory cgroup out of memory" or not container_id:
+            logging.info(
+                f"OOM kill process {host_pid} ({command}) is not a container OOM kill! Won't record."
+            )
+            return
+
         # Parse all key-value pairs in stats
         stats_kv = {k: v for k, v in re.findall(r'\s([^=]+)=\"([^"]*)\"', stats)}
 
