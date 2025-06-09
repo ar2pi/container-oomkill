@@ -62,10 +62,10 @@ kprobe:oom_kill_process
 
 	// process mm stats
 	printf(" mm_rss_filepages=\"%d\" mm_rss_anonpages=\"%d\" mm_rss_swapents=\"%d\" mm_rss_shmempages=\"%d\"",
-		$oc->chosen->mm->rss_stat[0].count,
-		$oc->chosen->mm->rss_stat[1].count,
-		$oc->chosen->mm->rss_stat[2].count,
-		$oc->chosen->mm->rss_stat[3].count);
+		$oc->chosen->mm->rss_stat.count[0].counter,
+		$oc->chosen->mm->rss_stat.count[1].counter,
+		$oc->chosen->mm->rss_stat.count[2].counter,
+		$oc->chosen->mm->rss_stat.count[3].counter);
 	printf(" mm_pgtables_bytes=\"%d\"",
 		$oc->chosen->mm->pgtables_bytes.counter);
 	// other mm stats

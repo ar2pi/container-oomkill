@@ -467,7 +467,6 @@ def parse_line(line):
             container_id=container_id,
             command=command,
         ).set(int(stats_kv["proc_maj_flt"]))
-        # arguably flags should be a label? worried about cardinality though
         container_oomkills_flags.labels(
             container_id=container_id,
             command=command,

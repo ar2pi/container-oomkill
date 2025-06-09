@@ -1,8 +1,18 @@
 services:
 
+  probe:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - /sys:/sys:ro  # required to access /sys/fs/cgroup/docker/CONTAINER_ID
+    privileged: true  # required to run bpftrace, as an alternative could try setting CAP_BPF, CAP_PERFMON
+    pid: host         # required to trace processes from host
+
   exporter:
     build:
-      context: ./exporter
+      context: .
+      dockerfile: Dockerfile.exporter
     volumes:
       - /sys:/sys:ro  # required to access /sys/fs/cgroup/docker/CONTAINER_ID
     privileged: true  # required to run bpftrace, as an alternative could try setting CAP_BPF, CAP_PERFMON
@@ -10,10 +20,10 @@ services:
     ports:
       - "9262:9262"
 
-  mem-stress:
+  stress-mem:
     image: python:3-slim
     volumes:
-      - ./mem-stress:/app
+      - ./stress-mem:/app
     working_dir: /app
     command: python3 main.py
     restart: on-failure
@@ -53,7 +63,7 @@ services:
       - "9090:9090"
 
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana-oss:latest
     volumes:
       - grafana_data:/var/lib/grafana
     environment:

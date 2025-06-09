@@ -1,5 +1,7 @@
 # container-oomkill (WIP)
 
+[Probe Docker image](https://hub.docker.com/repository/docker/ar2pi/container-oomkill-probe/general) | [Exporter Docker image](https://hub.docker.com/repository/docker/ar2pi/container-oomkill-exporter/general)
+
 eBPF tool to troubleshoot container OOMs.
 
 [bpftrace](https://github.com/bpftrace/bpftrace)
@@ -7,7 +9,17 @@ eBPF tool to troubleshoot container OOMs.
 
 ## Build
 
-@TODO: document build process
+Build the probe
+```sh
+docker build -t ar2pi/container-oomkill-probe .
+docker push ar2pi/container-oomkill-probe
+```
+
+Build the exporter
+```sh
+docker build -t ar2pi/container-oomkill-exporter -f Dockerfile.exporter .
+docker push ar2pi/container-oomkill-exporter
+```
 
 ## Run
 
@@ -15,14 +27,18 @@ eBPF tool to troubleshoot container OOMs.
 make up
 ```
 
-Running service urls
-- container-oomkill exporter metrics: http://localhost:9262
-- Grafana:        http://localhost:3000 (usr: admin, passwd: admin)
-- Prometheus UI:  http://localhost:9090
+| Service | URL | Credentials |
+|---------|-----|-------------|
+| container-oomkill exporter | http://localhost:9262 | - |
+| Grafana | http://localhost:3000 | user: admin, password: admin |
+| Prometheus UI | http://localhost:9090 | - |
 
 ## Debug
 
 ```sh
+# tail journal logs
+sudo journalctl -k -f | grep -B 200 -i 'out of memory'
+
 # list oom kernel probes
 docker exec -it container-oomkill-exporter-1 bpftrace -l "kprobe:oom*"
 
@@ -120,6 +136,7 @@ docker run -it --privileged --pid=host debian nsenter -t 1 -m -u -n -i bash
 
 ## @TODO:
 
+- [ ] dev container
 - [ ] build grafana dashboard
 - [ ] try it out in kubernetes
 - [ ] build container-oomkill-exporter image and push to public repository
