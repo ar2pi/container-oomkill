@@ -1,0 +1,26 @@
+[project]
+name = "container-oomkill-exporter"
+version = "0.1.0"
+description = "Prometheus exporter for container OOM kills"
+authors = [
+    {name = "Arthur Picerna",email = "hello@ar2pi.net"}
+]
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "prometheus-client (>=0.22.1,<0.23.0)"
+]
+
+[tool.poetry]
+package-mode = false
+
+[tool.poetry.group.dev.dependencies]
+black = "^25.1.0"
+ipython = "^9.3.0"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.isort]
+profile = "black"
