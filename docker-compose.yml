@@ -1,14 +1,5 @@
 services:
 
-  probe:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    volumes:
-      - /sys:/sys:ro  # required to access /sys/fs/cgroup/docker/CONTAINER_ID
-    privileged: true  # required to run bpftrace, as an alternative could try setting CAP_BPF, CAP_PERFMON
-    pid: host         # required to trace processes from host
-
   exporter:
     build:
       context: .
@@ -18,7 +9,7 @@ services:
     privileged: true  # required to run bpftrace, as an alternative could try setting CAP_BPF, CAP_PERFMON
     pid: host         # required to trace processes from host
     ports:
-      - "9262:9262"
+      - 9262:9262
 
   stress-mem:
     image: python:3-slim
@@ -51,6 +42,25 @@ services:
   #         memory: 128M
   #   stop_grace_period: 1s
 
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    ports:
+      - 8080:8080
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+    - 6379:6379
+
   prometheus:
     image: prom/prometheus:latest
     volumes:
@@ -60,7 +70,7 @@ services:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--storage.tsdb.path=/prometheus"
     ports:
-      - "9090:9090"
+      - 9090:9090
 
   grafana:
     image: grafana/grafana-oss:latest
@@ -70,7 +80,7 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin
       - GF_SECURITY_ADMIN_USER=admin
     ports:
-      - "3000:3000"
+      - 3000:3000
 
 volumes:
   prometheus_data:
