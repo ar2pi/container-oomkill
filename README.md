@@ -2,7 +2,7 @@
 
 [Probe Docker image](https://hub.docker.com/repository/docker/ar2pi/container-oomkill-probe/general) | [Exporter Docker image](https://hub.docker.com/repository/docker/ar2pi/container-oomkill-exporter/general)
 
-eBPF tool to troubleshoot container OOM kills. Consists of an eBPF probe and a Prometheus exporter to expose `container_oomkill_*` metrics.
+eBPF tool to troubleshoot container OOM kills. Consists of an eBPF probe and a Prometheus exporter to expose `container_oomkills_*` metrics.
 
 ## Run
 
@@ -18,7 +18,8 @@ make up
 
 | Service | URL | Credentials |
 |---------|-----|-------------|
-| Prometheus exporter | http://localhost:9262 | - |
+| container-oomkill exporter | http://localhost:9262 | - |
+| cAdvisor exporter | http://localhost:8080 | - |
 | Prometheus UI | http://localhost:9090 | - |
 | Grafana | http://localhost:3000 | user: admin, password: admin |
 
