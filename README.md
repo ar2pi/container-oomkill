@@ -2,42 +2,46 @@
 
 [Probe Docker image](https://hub.docker.com/repository/docker/ar2pi/container-oomkill-probe/general) | [Exporter Docker image](https://hub.docker.com/repository/docker/ar2pi/container-oomkill-exporter/general)
 
-eBPF tool to troubleshoot container OOMs.
-
-[bpftrace](https://github.com/bpftrace/bpftrace)
-- [oomkill.bt](https://github.com/bpftrace/bpftrace/blob/master/tools/oomkill.bt)
-
-## Build
-
-Build the probe
-```sh
-docker build -t ar2pi/container-oomkill-probe .
-docker push ar2pi/container-oomkill-probe
-```
-
-Build the exporter
-```sh
-docker build -t ar2pi/container-oomkill-exporter -f Dockerfile.exporter .
-docker push ar2pi/container-oomkill-exporter
-```
+eBPF tool to troubleshoot container OOM kills. Consists of an eBPF probe and a Prometheus exporter to expose `container_oomkill_*` metrics.
 
 ## Run
 
+Single probe
+```sh
+docker run --privileged --pid=host -v /sys:/sys:ro ar2pi/container-oomkill-probe
+```
+
+Local project with the exporter
 ```sh
 make up
 ```
 
 | Service | URL | Credentials |
 |---------|-----|-------------|
-| container-oomkill exporter | http://localhost:9262 | - |
-| Grafana | http://localhost:3000 | user: admin, password: admin |
+| Prometheus exporter | http://localhost:9262 | - |
 | Prometheus UI | http://localhost:9090 | - |
+| Grafana | http://localhost:3000 | user: admin, password: admin |
+
+## Build
+
+```sh
+# Build the probe
+docker build -t container-oomkill-probe .
+
+# Build the exporter
+docker build -t container-oomkill-exporter -f Dockerfile.exporter .
+```
+
+Build and push all at once
+```sh
+make push
+```
 
 ## Debug
 
 ```sh
 # tail journal logs
-sudo journalctl -k -f | grep -B 200 -i 'out of memory'
+sudo journalctl -k -f | grep -B 90 -i 'out of memory'
 
 # list oom kernel probes
 docker exec -it container-oomkill-exporter-1 bpftrace -l "kprobe:oom*"
@@ -56,11 +60,14 @@ docker exec -it container-oomkill-exporter-1 bash
   # e.g.: 67108864 => 64MiB
   $ cat /sys/fs/cgroup/docker/CONTAINER_ID/memory.low
   
-# enter docker-desktop ns
-docker run -it --privileged --pid=host debian nsenter -t 1 -m -u -n -i bash
+# enter docker-desktop ns (useful on macos)
+docker run -it --privileged --pid=host debian:stable-slim nsenter -t 1 -m -u -n -i bash
 ```
 
 ## Resources
+
+[bpftrace](https://github.com/bpftrace/bpftrace)
+- [oomkill.bt](https://github.com/bpftrace/bpftrace/blob/master/tools/oomkill.bt)
 
 - [Memory Management in Linux - Concepts overview](https://docs.kernel.org/admin-guide/mm/concepts.html)
 - [cgroups v2](https://www.kernel.org/doc/html/latest/admin-guide/cgroup-v2.html)
