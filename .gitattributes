@@ -1,1 +1,2 @@
 *.bt linguist-language=C
+Dockerfile.* linguist-language=Dockerfile
