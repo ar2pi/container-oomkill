@@ -1,6 +1,6 @@
-# container-oomkill (WIP)
+# container-oomkill-exporter (WIP)
 
-[Probe Docker image](https://hub.docker.com/repository/docker/ar2pi/container-oomkill-probe/general) | [Exporter Docker image](https://hub.docker.com/repository/docker/ar2pi/container-oomkill-exporter/general)
+[Dockerhub](https://hub.docker.com/r/ar2pi/container-oomkill-exporter)
 
 eBPF tool to troubleshoot container OOM kills. Consists of an eBPF probe and a Prometheus exporter to expose `container_oomkills_*` metrics.
 
